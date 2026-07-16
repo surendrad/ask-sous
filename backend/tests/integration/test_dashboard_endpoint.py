@@ -30,9 +30,7 @@ async def test_dashboard_single_location_returns_one_location_with_kpis_trend_an
     restaurant_id = seeded_restaurants["Golden Skillet"]
 
     async with await _client() as client:
-        response = await client.get(
-            "/dashboard", params={"restaurant_ids": [str(restaurant_id)]}
-        )
+        response = await client.get("/dashboard", params={"restaurant_ids": [str(restaurant_id)]})
 
     assert response.status_code == 200
     body = response.json()
@@ -93,13 +91,9 @@ async def test_dashboard_multi_location_returns_one_entry_per_restaurant_and_agg
         assert len(location["revenue_trend"]) == 7
         assert 0 <= float(location["upsell_attach_rate"]) <= 1
 
-    expected_total_revenue = sum(
-        float(loc["kpis"]["total_revenue"]) for loc in data["locations"]
-    )
+    expected_total_revenue = sum(float(loc["kpis"]["total_revenue"]) for loc in data["locations"])
     assert abs(float(data["totals"]["total_revenue"]) - expected_total_revenue) < 0.01
-    expected_transaction_count = sum(
-        loc["kpis"]["transaction_count"] for loc in data["locations"]
-    )
+    expected_transaction_count = sum(loc["kpis"]["transaction_count"] for loc in data["locations"])
     assert data["totals"]["transaction_count"] == expected_transaction_count
 
     assert data["top_items"] is None
@@ -107,9 +101,7 @@ async def test_dashboard_multi_location_returns_one_entry_per_restaurant_and_agg
 
 async def test_dashboard_nonexistent_restaurant_returns_404():
     async with await _client() as client:
-        response = await client.get(
-            "/dashboard", params={"restaurant_ids": [str(uuid.uuid4())]}
-        )
+        response = await client.get("/dashboard", params={"restaurant_ids": [str(uuid.uuid4())]})
 
     assert response.status_code == 404
     body = response.json()

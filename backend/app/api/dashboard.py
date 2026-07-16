@@ -53,9 +53,7 @@ class DashboardData(BaseModel):
 
 def _revenue_trend(summary: RevenueSummary, trend_days: list[date]) -> list[RevenueTrendDay]:
     revenue_by_day = {row.day: row.revenue for row in summary.daily_breakdown}
-    return [
-        RevenueTrendDay(day=day, revenue=str(revenue_by_day.get(day, 0))) for day in trend_days
-    ]
+    return [RevenueTrendDay(day=day, revenue=str(revenue_by_day.get(day, 0))) for day in trend_days]
 
 
 def _totals(summaries: list[RevenueSummary]) -> DashboardKpis:
@@ -87,9 +85,7 @@ async def get_dashboard(restaurant_ids: Annotated[list[uuid.UUID], Query()]) -> 
         compare_locations(restaurant_ids, start_date, end_date),
         get_upsell_metrics(restaurant_ids, start_date, end_date),
     )
-    upsell_by_id: dict[uuid.UUID, UpsellMetrics] = {
-        m.restaurant_id: m for m in upsell_metrics
-    }
+    upsell_by_id: dict[uuid.UUID, UpsellMetrics] = {m.restaurant_id: m for m in upsell_metrics}
 
     locations = [
         LocationDashboard(

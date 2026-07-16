@@ -127,9 +127,7 @@ async def test_deeper_analysis_keyword_escalates_to_pro():
     with patch("app.agent.insights.GeminiClient", return_value=mock_client):
         events = [
             event
-            async for event in answer_question_stream(
-                [_RID], "give me a deep dive on revenue"
-            )
+            async for event in answer_question_stream([_RID], "give me a deep dive on revenue")
         ]
 
     assert events[-1].result.model == PRO_MODEL

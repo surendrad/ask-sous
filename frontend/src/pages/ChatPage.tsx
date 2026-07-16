@@ -38,47 +38,49 @@ export default function ChatPage({ restaurantIds }: ChatPageProps) {
     setError(null);
     setIsWaiting(true);
 
-    let hasStartedStreaming = false;
+    // agentMessageId is a stable id (never mutated), not a "has streaming
+    // started" flag — "has the placeholder already been added" is derived
+    // from `prev` itself on every call, so these updaters stay pure
+    // (same input always produces the same output). This matters because
+    // React StrictMode double-invokes state updaters in development to
+    // catch impure ones: an earlier version tracked "started streaming" via
+    // a mutable outer-scope boolean, which diverged between the two
+    // StrictMode invocations and silently corrupted the user's own message
+    // by merging the agent's answer into it.
     const agentMessageId = crypto.randomUUID();
 
     await streamChat(restaurantIds, trimmed, {
       onChunk: (text) => {
         setIsWaiting(false);
         setMessages((prev) => {
-          if (!hasStartedStreaming) {
-            hasStartedStreaming = true;
-            return [
-              ...prev,
-              { id: agentMessageId, sender: "agent", text, isStreaming: true },
-            ];
+          const last = prev[prev.length - 1];
+          if (last?.id === agentMessageId) {
+            const next = [...prev];
+            next[next.length - 1] = { ...last, text: last.text + text };
+            return next;
           }
-          const next = [...prev];
-          const last = next[next.length - 1];
-          next[next.length - 1] = { ...last, text: last.text + text };
-          return next;
+          return [
+            ...prev,
+            { id: agentMessageId, sender: "agent", text, isStreaming: true },
+          ];
         });
       },
       onDone: (result) => {
         setIsWaiting(false);
         setMessages((prev) => {
-          const next = [...prev];
-          if (hasStartedStreaming) {
-            next[next.length - 1] = {
-              id: agentMessageId,
-              sender: "agent",
-              text: result.answer,
-              toolCalls: result.tool_calls,
-              isStreaming: false,
-            };
-          } else {
-            next.push({
-              id: agentMessageId,
-              sender: "agent",
-              text: result.answer,
-              toolCalls: result.tool_calls,
-            });
+          const last = prev[prev.length - 1];
+          const agentMessage = {
+            id: agentMessageId,
+            sender: "agent" as const,
+            text: result.answer,
+            toolCalls: result.tool_calls,
+          };
+          if (last?.id === agentMessageId) {
+            const next = [...prev];
+            next[next.length - 1] = agentMessage;
+            return next;
           }
-          return next;
+          return [...prev, agentMessage];
         });
       },
       onError: (apiError) => {

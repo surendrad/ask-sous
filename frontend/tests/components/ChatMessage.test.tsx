@@ -42,4 +42,31 @@ describe("ChatMessage", () => {
 
     expect(screen.queryByTestId("streaming-cursor")).not.toBeInTheDocument();
   });
+
+  it("renders markdown formatting in agent messages (bold, bullet lists) instead of literal asterisks", () => {
+    // A real live /chat call asking for a "week by week breakdown" came
+    // back as markdown (**bold**, bullet lists) that rendered as a raw wall
+    // of text with literal asterisks — the model naturally produces
+    // markdown for structured answers, but nothing parsed it.
+    render(
+      <ChatMessage
+        sender="agent"
+        text={"**Week 1:** good\n\n- Location A: $100\n- Location B: $200"}
+      />,
+    );
+
+    expect(screen.queryByText(/\*\*/)).not.toBeInTheDocument();
+    const bold = screen.getByText("Week 1:");
+    expect(bold.tagName).toBe("STRONG");
+    expect(screen.getByText(/Location A/)).toBeInTheDocument();
+    expect(screen.getByText(/Location B/)).toBeInTheDocument();
+  });
+
+  it("renders user messages as plain text, not parsed markdown", () => {
+    // User input is never markdown-authored — parsing it would be
+    // pointless and risks unexpected formatting from stray asterisks.
+    render(<ChatMessage sender="user" text="what about **this** week?" />);
+
+    expect(screen.getByText("what about **this** week?")).toBeInTheDocument();
+  });
 });

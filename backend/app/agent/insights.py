@@ -32,6 +32,7 @@ from app.agent.llm_client import (
 )
 from app.agent.prompts.insights_system_instruction import build_insights_system_instruction
 from app.agent.tool_registry import INSIGHTS_TOOLS, TOOL_DISPATCH, _to_jsonable
+from app.agent.tools.restaurant_lookup import get_restaurant_names
 
 logger = structlog.get_logger()
 
@@ -138,7 +139,10 @@ async def answer_question(restaurant_ids: list[uuid.UUID], question: str) -> Age
     try:
         logger.info("agent_turn_started", question=question, restaurant_ids=restaurant_id_strs)
         client = GeminiClient()
-        system_instruction = build_insights_system_instruction(restaurant_ids)
+        restaurant_names = await get_restaurant_names(restaurant_ids)
+        system_instruction = build_insights_system_instruction(
+            restaurant_ids, restaurant_names=restaurant_names
+        )
         history: list[ConversationEntry] = [UserText(question)]
         tool_calls: list[ToolCallRecord] = []
 
@@ -195,7 +199,10 @@ async def answer_question_stream(
     try:
         logger.info("agent_turn_started", question=question, restaurant_ids=restaurant_id_strs)
         client = GeminiClient()
-        system_instruction = build_insights_system_instruction(restaurant_ids)
+        restaurant_names = await get_restaurant_names(restaurant_ids)
+        system_instruction = build_insights_system_instruction(
+            restaurant_ids, restaurant_names=restaurant_names
+        )
         history: list[ConversationEntry] = [UserText(question)]
         tool_calls: list[ToolCallRecord] = []
 

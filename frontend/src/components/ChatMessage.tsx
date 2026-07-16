@@ -1,3 +1,5 @@
+import ReactMarkdown from "react-markdown";
+
 import { CitationChip } from "@/components/CitationChip";
 import type { ChatToolCall } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -7,6 +9,28 @@ type ChatMessageProps = {
   text: string;
   toolCalls?: ChatToolCall[];
   isStreaming?: boolean;
+};
+
+// The model naturally formats structured answers (comparisons, breakdowns)
+// as markdown — bold, bullet lists, paragraphs. A real live /chat call
+// asking for a "week by week breakdown" surfaced this rendering as a raw
+// wall of text with literal asterisks, since nothing parsed it. Only agent
+// text is parsed as markdown; user input is never markdown-authored.
+// `components` overrides drop react-markdown's default browser margins in
+// favor of the chat bubble's own compact spacing.
+const MARKDOWN_COMPONENTS = {
+  p: ({ children }: { children?: React.ReactNode }) => (
+    <p className="mb-2 last:mb-0">{children}</p>
+  ),
+  ul: ({ children }: { children?: React.ReactNode }) => (
+    <ul className="mb-2 list-disc pl-4 last:mb-0">{children}</ul>
+  ),
+  ol: ({ children }: { children?: React.ReactNode }) => (
+    <ol className="mb-2 list-decimal pl-4 last:mb-0">{children}</ol>
+  ),
+  strong: ({ children }: { children?: React.ReactNode }) => (
+    <strong className="font-semibold">{children}</strong>
+  ),
 };
 
 /** Message bubble per design-guidelines.md §11: user messages right-aligned
@@ -40,7 +64,11 @@ export function ChatMessage({
             : "border border-border bg-elevated text-text",
         )}
       >
-        {text}
+        {isUser ? (
+          text
+        ) : (
+          <ReactMarkdown components={MARKDOWN_COMPONENTS}>{text}</ReactMarkdown>
+        )}
         {isStreaming && (
           <span
             data-testid="streaming-cursor"

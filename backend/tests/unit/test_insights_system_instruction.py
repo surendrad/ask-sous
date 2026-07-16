@@ -13,11 +13,30 @@ async def test_system_instruction_passed_to_model_includes_restaurant_id():
     mock_client = AsyncMock()
     mock_client.generate_turn = AsyncMock(return_value=FinalAnswer(text="Hi."))
 
-    with patch("app.agent.insights.GeminiClient", return_value=mock_client):
+    with (
+        patch("app.agent.insights.GeminiClient", return_value=mock_client),
+        patch("app.agent.insights.get_restaurant_names", AsyncMock(return_value={})),
+    ):
         await answer_question([_RID], "hi")
 
     _, kwargs = mock_client.generate_turn.call_args
     assert str(_RID) in kwargs["system_instruction"]
+
+
+def test_system_instruction_tells_model_to_use_names_not_raw_ids():
+    # A real live /chat call asking to compare multiple locations answered
+    # with raw UUIDs ("Restaurant bdd640fb-0667-...") instead of names,
+    # since nothing ever told the model what each restaurant is called.
+    instruction = build_insights_system_instruction(
+        [_RID], restaurant_names={_RID: "Golden Skillet"}
+    )
+    assert "Golden Skillet" in instruction
+    assert "refer to restaurants by name" in instruction.lower()
+
+
+def test_system_instruction_falls_back_gracefully_when_name_unknown():
+    instruction = build_insights_system_instruction([_RID])
+    assert str(_RID) in instruction
 
 
 def test_system_instruction_mentions_qualitative_review_search():

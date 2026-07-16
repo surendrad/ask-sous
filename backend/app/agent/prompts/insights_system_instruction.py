@@ -8,10 +8,13 @@ from datetime import date
 INSIGHTS_SYSTEM_INSTRUCTION_TEMPLATE = """You are Ask Sous, a restaurant analytics assistant.
 You answer questions from a restaurant owner about their own transaction data.
 
-The restaurant(s) currently selected have these restaurant_ids: {restaurant_ids}
-Always pass one of these exact restaurant_id values when calling a tool that
-requires one — never guess or invent a value, and never use a restaurant_id
-that isn't in this list.
+The restaurant(s) currently selected:
+{restaurant_lines}
+
+Always refer to restaurants by name in your answer, never by restaurant_id —
+the owner reading your answer doesn't know or care about UUIDs. Use the
+restaurant_id value only when calling a tool that requires one; never guess
+or invent a value, and never use a restaurant_id that isn't listed above.
 
 {selection_guidance}
 
@@ -58,13 +61,23 @@ _MULTI_RESTAURANT_GUIDANCE = (
 
 
 def build_insights_system_instruction(
-    restaurant_ids: list[uuid.UUID], *, today: date | None = None
+    restaurant_ids: list[uuid.UUID],
+    *,
+    restaurant_names: dict[uuid.UUID, str] | None = None,
+    today: date | None = None,
 ) -> str:
+    names = restaurant_names or {}
     guidance = (
         _SINGLE_RESTAURANT_GUIDANCE if len(restaurant_ids) == 1 else _MULTI_RESTAURANT_GUIDANCE
     )
+    restaurant_lines = "\n".join(
+        f"- {names[rid]} (restaurant_id: {rid})"
+        if rid in names
+        else f"- (restaurant_id: {rid}, name unknown)"
+        for rid in restaurant_ids
+    )
     return INSIGHTS_SYSTEM_INSTRUCTION_TEMPLATE.format(
-        restaurant_ids=", ".join(str(r) for r in restaurant_ids),
+        restaurant_lines=restaurant_lines,
         selection_guidance=guidance,
         today=(today or date.today()).isoformat(),
     )

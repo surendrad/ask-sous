@@ -40,9 +40,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_constraint(
-        "fk_transactions_campaign_id_campaigns", "transactions", type_="foreignkey"
-    )
+    op.drop_constraint("fk_transactions_campaign_id_campaigns", "transactions", type_="foreignkey")
     op.drop_index(op.f("ix_transactions_campaign_id"), table_name="transactions")
     op.drop_column("transactions", "campaign_id")
     op.drop_column("menu_items", "is_upsell")

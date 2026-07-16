@@ -14,6 +14,7 @@ from app.agent.tools.db import readonly_connection
 _BRAND_VOICE_GUIDE_SQL = text("SELECT brand_voice_guide FROM restaurants WHERE id = :restaurant_id")
 _RESTAURANT_EXISTS_SQL = text("SELECT 1 FROM restaurants WHERE id = :restaurant_id")
 _LIST_RESTAURANTS_SQL = text("SELECT id, name FROM restaurants ORDER BY name")
+_RESTAURANT_NAMES_SQL = text("SELECT id, name FROM restaurants WHERE id = ANY(:restaurant_ids)")
 
 
 @dataclass(frozen=True)
@@ -43,3 +44,16 @@ async def list_restaurants() -> list[RestaurantSummary]:
         result = await conn.execute(_LIST_RESTAURANTS_SQL)
         rows = result.all()
     return [RestaurantSummary(id=row.id, name=row.name) for row in rows]
+
+
+async def get_restaurant_names(restaurant_ids: list[uuid.UUID]) -> dict[uuid.UUID, str]:
+    """Name lookup for a specific set of restaurant_ids — used to give the
+    model human-readable names to answer with (Phase 8: a live multi-location
+    question surfaced the agent referring to restaurants by raw UUID in its
+    answer, since nothing before this ever gave it a name). Unknown ids are
+    silently omitted rather than raising, since callers only use this to
+    enrich a prompt, not to validate existence."""
+    async with readonly_connection() as conn:
+        result = await conn.execute(_RESTAURANT_NAMES_SQL, {"restaurant_ids": restaurant_ids})
+        rows = result.all()
+    return {row.id: row.name for row in rows}
