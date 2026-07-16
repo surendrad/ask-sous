@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { generateCampaign, getRestaurants, streamChat } from "@/lib/api";
+import {
+  generateCampaign,
+  getDashboard,
+  getRestaurants,
+  streamChat,
+} from "@/lib/api";
 
 function sseStreamResponse(frames: string[], init?: { status?: number }) {
   const encoder = new TextEncoder();
@@ -207,6 +212,43 @@ describe("generateCampaign", () => {
 
     await expect(generateCampaign("rid-1", "brief")).rejects.toThrow(
       "not found",
+    );
+  });
+});
+
+describe("getDashboard", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  it("returns the dashboard data from the envelope", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            kpis: {
+              total_revenue: "500.00",
+              transaction_count: 10,
+              average_ticket: "50.00",
+            },
+            revenue_trend: [{ day: "2026-07-10", revenue: "100.00" }],
+            top_items: [
+              { menu_item_name: "Truffle Fries", total_quantity: 42 },
+            ],
+          },
+          error: null,
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const result = await getDashboard("rid-1");
+
+    expect(result.kpis.total_revenue).toBe("500.00");
+    expect(result.revenue_trend[0].day).toBe("2026-07-10");
+    expect(result.top_items[0].menu_item_name).toBe("Truffle Fries");
+    expect(vi.mocked(fetch).mock.calls[0][0]).toContain(
+      "/dashboard?restaurant_id=rid-1",
     );
   });
 });

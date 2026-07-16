@@ -10,20 +10,25 @@ type View = "chat" | "campaigns" | "dashboard";
 type AppShellProps = {
   chatPanel: ReactNode;
   campaignsPanel: ReactNode;
+  dashboardPanel: ReactNode;
 };
 
-/** App shell: 224px sidebar + split view per design-guidelines.md §5 —
- * chat and campaigns render side by side at desktop widths always (no
- * router in this stack; they're two panels of one view, not two routes).
- * The nav items exist for the mobile bottom-tab-bar collapse
- * (design-guidelines.md §5's "below ~768px" breakpoint), where only one
- * panel is visible at a time — `activeView` drives which panel that is via
- * responsive visibility classes, not conditional rendering, so desktop
- * widths always show both regardless of `activeView`. Dashboard is
- * explicit Phase-7 scope (design-guidelines.md §11) — its nav item exists
- * as a disabled placeholder, not a working view, per implementation-plan.md's
- * MVP framing. */
-export function AppShell({ chatPanel, campaignsPanel }: AppShellProps) {
+/** App shell: 224px sidebar + split view per design-guidelines.md §5.
+ * Chat and Campaigns render side by side at desktop widths whenever
+ * `activeView` is one of them (no router in this stack; they're two panels
+ * of one view, not two routes) — the nav items between them exist for the
+ * mobile bottom-tab-bar collapse (design-guidelines.md §5's "below ~768px"
+ * breakpoint), where only one panel is visible at a time via responsive
+ * visibility classes, not conditional rendering, so desktop widths always
+ * show both. Dashboard (Phase 7) is different: it's a separate, full-width
+ * view, not part of that split (design-guidelines.md §5/§11) — switching to
+ * it conditionally renders the dashboard panel *instead of* the split,
+ * rather than just toggling visibility within it. */
+export function AppShell({
+  chatPanel,
+  campaignsPanel,
+  dashboardPanel,
+}: AppShellProps) {
   const [activeView, setActiveView] = useState<View>("chat");
 
   return (
@@ -53,32 +58,35 @@ export function AppShell({ chatPanel, campaignsPanel }: AppShellProps) {
           />
           <NavButton
             icon={<BarChart3 size={16} />}
-            label="Dashboard (coming soon)"
-            active={false}
-            disabled
-            onClick={() => {}}
+            label="Dashboard"
+            active={activeView === "dashboard"}
+            onClick={() => setActiveView("dashboard")}
           />
         </nav>
       </aside>
 
-      <main className="grid flex-1 grid-cols-1 lg:grid-cols-[1.6fr_1fr]">
-        <section
-          className={cn(
-            "min-h-0 border-border lg:block lg:border-r",
-            activeView !== "chat" && "hidden",
-          )}
-        >
-          {chatPanel}
-        </section>
-        <section
-          className={cn(
-            "min-h-0 lg:block",
-            activeView !== "campaigns" && "hidden",
-          )}
-        >
-          {campaignsPanel}
-        </section>
-      </main>
+      {activeView === "dashboard" ? (
+        <main className="flex-1 overflow-y-auto">{dashboardPanel}</main>
+      ) : (
+        <main className="grid flex-1 grid-cols-1 lg:grid-cols-[1.6fr_1fr]">
+          <section
+            className={cn(
+              "min-h-0 border-border lg:block lg:border-r",
+              activeView !== "chat" && "hidden",
+            )}
+          >
+            {chatPanel}
+          </section>
+          <section
+            className={cn(
+              "min-h-0 lg:block",
+              activeView !== "campaigns" && "hidden",
+            )}
+          >
+            {campaignsPanel}
+          </section>
+        </main>
+      )}
     </div>
   );
 }

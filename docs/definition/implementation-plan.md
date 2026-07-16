@@ -202,6 +202,8 @@ The **MVP is Phases 0–6**: foundation through a working frontend covering both
 
 ## Phase 7: Polish (post-MVP)
 
+**Status:** ✅ Buildable and tested (2026-07-16). Plan: `docs/plans/phase-7-polish.md`. See `docs/changelog.md` for what shipped. Verified against a real running backend + database, including a live `run_trickle_loop()` run — found and fixed two real bugs (unformatted Decimal KPI display, invisible zero-height chart bars from a CSS percentage-height gotcha). **Known, documented deviation:** dashboard charts are CSS-drawn, not Recharts as this section's own 7.2 wording names — reconciled in favor of design-guidelines.md's later, more specific `/designer` decision; see `docs/decisions/012-live-trickle-generator.md`.
+
 **Goal:** Optional demo polish, explicitly deferred from the MVP per the master plan.
 
 ### 7.1 Live-trickle generator

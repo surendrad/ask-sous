@@ -13,6 +13,7 @@ function renderShell() {
       <AppShell
         chatPanel={<div>chat content</div>}
         campaignsPanel={<div>campaigns content</div>}
+        dashboardPanel={<div>dashboard content</div>}
       />
     </RestaurantProvider>,
   );
@@ -27,7 +28,23 @@ describe("AppShell", () => {
     expect(
       screen.getByRole("button", { name: /^campaigns$/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /dashboard/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^dashboard$/i })).toBeEnabled();
+  });
+
+  it("switching to Dashboard shows the full-width dashboard view instead of the split", async () => {
+    const user = userEvent.setup();
+    renderShell();
+
+    expect(screen.queryByText("dashboard content")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^dashboard$/i }));
+
+    expect(screen.getByText("dashboard content")).toBeInTheDocument();
+    expect(screen.queryByText("chat content")).not.toBeInTheDocument();
+    expect(screen.queryByText("campaigns content")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^dashboard$/i }),
+    ).toHaveAttribute("aria-current", "page");
   });
 
   it("renders the restaurant switcher", () => {

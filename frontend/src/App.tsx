@@ -9,6 +9,7 @@ import {
 } from "@/lib/restaurant-context";
 import CampaignsPanel from "@/pages/CampaignsPanel";
 import ChatPage from "@/pages/ChatPage";
+import DashboardPage from "@/pages/DashboardPage";
 
 function AppShellWithData() {
   const { selectedRestaurant } = useRestaurantContext();
@@ -35,6 +36,12 @@ function AppShellWithData() {
       }
       campaignsPanel={
         <CampaignsPanel
+          key={selectedRestaurant.id}
+          restaurantId={selectedRestaurant.id}
+        />
+      }
+      dashboardPanel={
+        <DashboardPage
           key={selectedRestaurant.id}
           restaurantId={selectedRestaurant.id}
         />

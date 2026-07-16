@@ -41,6 +41,28 @@ export type CampaignResult = {
   model: string;
 };
 
+export type DashboardKpis = {
+  total_revenue: string;
+  transaction_count: number;
+  average_ticket: string;
+};
+
+export type RevenueTrendDay = {
+  day: string;
+  revenue: string;
+};
+
+export type TopItem = {
+  menu_item_name: string;
+  total_quantity: number;
+};
+
+export type DashboardData = {
+  kpis: DashboardKpis;
+  revenue_trend: RevenueTrendDay[];
+  top_items: TopItem[];
+};
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const UNKNOWN_ERROR: ApiError = {
   message: "Failed to reach the backend.",
@@ -67,6 +89,14 @@ export async function getHealth(): Promise<HealthStatus> {
 export async function getRestaurants(): Promise<Restaurant[]> {
   const data = await requestJson<{ restaurants: Restaurant[] }>("/restaurants");
   return data.restaurants;
+}
+
+export async function getDashboard(
+  restaurantId: string,
+): Promise<DashboardData> {
+  return requestJson<DashboardData>(
+    `/dashboard?restaurant_id=${encodeURIComponent(restaurantId)}`,
+  );
 }
 
 export async function generateCampaign(

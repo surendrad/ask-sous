@@ -431,3 +431,58 @@ Status indicators: ⬜ Not Started · ✅ Passed · ❌ Failed
 - The sidebar collapses to a bottom tab bar (Chat / Campaigns / Dashboard); only one of the Chat/Campaigns panels is visible at a time, switching via the tab bar; all text and controls remain legible and reachable without horizontal scrolling.
 
 **Known gap, tracked openly rather than silently skipped:** implementation-plan.md's Phase 6 Testing section calls for automated Playwright E2E smoke tests as "the first phase with a real UI to drive." This phase instead used a manual Playwright-MCP browser pass against the real running backend + seeded database (see `docs/tasks.md`'s 6.4 entry for what was actually exercised, including the bug it caught) — no Playwright test files or config were committed. This is a deliberate scope trade-off under this implementation session's time constraints, not an oversight: setting up a real Playwright test harness (browser install, CI wiring, fixture data lifecycle) is itself nontrivial work. Revisit if/when this project moves toward the kind of repeated-regression-testing need automated E2E coverage is for.
+
+## Phase 7: Polish (post-MVP)
+
+### UAT-7.1: With `ENABLE_TRICKLE=true`, transaction data visibly grows over time without any manual action
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. Set `ENABLE_TRICKLE=true` in `.env`, restart the backend.
+2. Note the transaction count for a restaurant (via the dashboard or a direct query).
+3. Wait about a minute, check again.
+
+**Expected:**
+
+- The transaction count has increased, with no manual action taken — new rows have a `transaction_time` at or near the moment they were inserted, not backdated into the fixed seed window.
+
+### UAT-7.2: With `ENABLE_TRICKLE=false` (default), no trickle transactions ever appear
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. Confirm `.env` has `ENABLE_TRICKLE=false` (or is unset — this is the default), restart the backend.
+2. Note the transaction count; wait a few minutes; check again.
+
+**Expected:**
+
+- The transaction count is unchanged — no background activity happens when the flag is off.
+
+### UAT-7.3: Dashboard view shows sensible KPIs, a 7-day revenue trend, and a top-items ranking for the selected restaurant
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. Open the app, click the Dashboard nav item.
+
+**Expected:**
+
+- Three KPI cards (revenue, transactions, average ticket) show plausible, correctly-formatted currency values (two decimal places, not a long raw decimal); a 7-bar revenue trend chart renders with visibly different bar heights matching the underlying data (not flat/invisible bars); a top-5 items list renders with proportional bars, sorted by quantity descending.
+
+### UAT-7.4: Switching restaurants updates the dashboard view too
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. On the Dashboard view, switch restaurants via the sidebar switcher.
+
+**Expected:**
+
+- The KPIs, revenue trend, and top items all update to reflect the newly-selected restaurant's data — the same restaurant-scoping behavior as chat and campaigns.
+
+**Note on "Not Started" status:** all four Phase 7 UATs remain formally Not Started — these are conducted by the user in production, not signed off during implementation. This phase's own manual verification pass (a short synthetic `run_trickle_loop()` run confirming real inserts, and a single Playwright browser check of the dashboard for one restaurant) exercised the *mechanics* UAT-7.1 and UAT-7.3 describe closely enough to catch two real bugs, but did not walk the full UAT steps as written (e.g. UAT-7.1's ~1-minute organic wait with `ENABLE_TRICKLE=true` in `.env`, UAT-7.2's multi-minute disabled-state check, or UAT-7.4's specific switch-and-verify flow) — see `docs/changelog.md`'s Phase 7 entry for exactly what was and wasn't checked.

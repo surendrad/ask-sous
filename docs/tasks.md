@@ -458,3 +458,39 @@ Status indicators: ⬜ Not Started · 🟧 In Progress · 🟩 Done · 🟥 Bloc
 - 🟩 Write `docs/decisions/011-sse-streaming-and-mid-stream-errors.md`
 - 🟩 Update `CLAUDE.md` (`/restaurants` endpoint, SSE `/chat` contract change, frontend structure, restaurant-switch remount note)
 - 🟩 Update `docs/definition/implementation-plan.md` to mark Phase 6 status
+
+## Phase 7: Polish (post-MVP)
+
+### 7.1 Live-trickle generator
+
+- 🟩 Write failing integration test for `insert_trickle_transaction()`
+- 🟩 Implement `insert_trickle_transaction()`
+- 🟩 Write failing integration test for `run_trickle_loop()`
+- 🟩 Implement `run_trickle_loop()`
+- 🟩 Write failing test asserting the lifespan doesn't start the loop when `ENABLE_TRICKLE=false`
+- 🟩 Wire the lifespan in `main.py`
+
+### 7.2 Dashboard
+
+- 🟩 Write failing integration test for `GET /dashboard`
+- 🟩 Implement the endpoint, register the router
+- 🟩 Write failing Vitest test for `getDashboard()`
+- 🟩 Implement it
+- 🟩 Write failing RTL tests for `DashboardPage`
+- 🟩 Implement `DashboardPage`
+- 🟩 Write failing RTL test for `AppShell`'s enabled Dashboard nav item
+- 🟩 Implement the `AppShell` change, wire `DashboardPage` into `App.tsx`
+
+### 7.X Testing (cross-cutting)
+
+- 🟩 Full-suite pass (backend + frontend), no regressions (238 backend + 44 frontend, after code-review fixes)
+- 🟩 `ruff check . && ruff format --check .` (backend), `npm run lint` (frontend)
+- 🟩 Manual verification pass (real browser via Playwright MCP + a live `run_trickle_loop()` run against the real DB — confirmed real transactions inserted with genuine current timestamps, dashboard KPIs/trend/top-items correct. Found and fixed two real bugs: unrounded Decimal KPI values rendering with 20+ digits, and revenue-trend bars rendering with zero height due to a CSS percentage-height parent-sizing gotcha — both fixed with regression tests)
+
+### 7.Y Documentation
+
+- 🟩 Update `docs/uat.md` with UAT-7.1 through UAT-7.4
+- 🟩 Update `docs/changelog.md` with Phase 7 completion summary
+- 🟩 Write `docs/decisions/012-live-trickle-generator.md` (trickle generator + Recharts-vs-CSS-bars reconciliation)
+- 🟩 Update `CLAUDE.md`
+- 🟩 Update `docs/definition/implementation-plan.md` to mark Phase 7 status
