@@ -25,6 +25,7 @@ from app.core.config import Settings, get_settings
 logger = structlog.get_logger()
 
 FLASH_MODEL = "gemini-2.5-flash"
+PRO_MODEL = "gemini-2.5-pro"
 
 
 @dataclass(frozen=True)

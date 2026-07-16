@@ -18,6 +18,7 @@ import structlog
 from app.agent.exceptions import AgentIncompleteError
 from app.agent.llm_client import (
     FLASH_MODEL,
+    PRO_MODEL,
     ConversationEntry,
     FinalAnswer,
     GeminiClient,
@@ -33,6 +34,23 @@ from app.agent.tool_registry import INSIGHTS_TOOLS, TOOL_DISPATCH, _to_jsonable
 logger = structlog.get_logger()
 
 MAX_TOOL_CALL_ROUNDS = 5
+
+# See docs/decisions/010-model-routing-heuristic.md
+ESCALATION_TOOL_CALL_THRESHOLD = 3
+_DEEPER_ANALYSIS_KEYWORDS = ("deep dive", "deeper analysis", "thorough", "in depth", "in-depth")
+
+
+def _select_model(question: str, *, completed_tool_call_rounds: int) -> tuple[str, str]:
+    """Returns (model, routing_reason). A question requesting deeper
+    analysis escalates immediately regardless of round count; otherwise a
+    turn stays on Flash until it's needed 3+ tool-call rounds without
+    reaching a final answer."""
+    lowered = question.lower()
+    if any(keyword in lowered for keyword in _DEEPER_ANALYSIS_KEYWORDS):
+        return PRO_MODEL, "keyword"
+    if completed_tool_call_rounds >= ESCALATION_TOOL_CALL_THRESHOLD:
+        return PRO_MODEL, "tool_call_threshold"
+    return FLASH_MODEL, "default"
 
 
 @dataclass(frozen=True)
@@ -94,13 +112,15 @@ async def answer_question(restaurant_id: uuid.UUID, question: str) -> AgentTurnR
         history: list[ConversationEntry] = [UserText(question)]
         tool_calls: list[ToolCallRecord] = []
 
-        for _round in range(MAX_TOOL_CALL_ROUNDS):
+        for round_index in range(MAX_TOOL_CALL_ROUNDS):
+            model, routing_reason = _select_model(question, completed_tool_call_rounds=round_index)
             turn_output = await client.generate_turn(
                 history=history,
                 tools=INSIGHTS_TOOLS,
                 system_instruction=system_instruction,
+                model=model,
             )
-            logger.info("agent_turn_model_selected", model=FLASH_MODEL)
+            logger.info("agent_turn_model_selected", model=model, routing_reason=routing_reason)
 
             if isinstance(turn_output, FinalAnswer):
                 if not _check_grounding(turn_output.text, tool_calls):
@@ -110,9 +130,7 @@ async def answer_question(restaurant_id: uuid.UUID, question: str) -> AgentTurnR
                     answer=turn_output.text,
                     tool_call_count=len(tool_calls),
                 )
-                return AgentTurnResult(
-                    answer=turn_output.text, tool_calls=tool_calls, model=FLASH_MODEL
-                )
+                return AgentTurnResult(answer=turn_output.text, tool_calls=tool_calls, model=model)
 
             history.append(ModelToolCalls(calls=turn_output))
 

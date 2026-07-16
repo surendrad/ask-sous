@@ -58,6 +58,9 @@ async def test_full_turn_emits_all_five_structured_events():
     assert completed["answer"] == "Here is your answer."
     assert completed["tool_call_count"] == 1
 
+    model_events = [e for e in captured if e["event"] == "agent_turn_model_selected"]
+    assert all(e["routing_reason"] == "default" for e in model_events)
+
 
 async def test_tool_call_requested_logs_parsed_args_not_raw_model_json():
     # start_date is sent as a raw JSON string by the (mocked) model; once

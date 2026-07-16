@@ -1,11 +1,13 @@
 import uuid
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from app.agent.exceptions import AgentIncompleteError
 from app.agent.insights import answer_question
-from app.agent.llm_client import FinalAnswer, ToolCallRequest
+from app.agent.llm_client import PRO_MODEL, FinalAnswer, ToolCallRequest, UserText
+from app.agent.tool_registry import INSIGHTS_TOOLS
 
 _RID = uuid.uuid4()
 
@@ -110,3 +112,60 @@ async def test_round_cap_exceeded_raises_agent_incomplete():
     with patch("app.agent.insights.GeminiClient", return_value=mock_client):
         with pytest.raises(AgentIncompleteError):
             await answer_question(_RID, "what was my revenue?")
+
+
+async def test_turn_needing_four_rounds_escalates_to_pro_model():
+    tool_call = [
+        ToolCallRequest(
+            name="get_revenue_summary",
+            args={
+                "restaurant_id": str(_RID),
+                "start_date": "2026-01-01",
+                "end_date": "2026-01-31",
+            },
+        )
+    ]
+    mock_client = AsyncMock()
+    mock_client.generate_turn = AsyncMock(
+        side_effect=[tool_call, tool_call, tool_call, FinalAnswer(text="Deep answer.")]
+    )
+    fake_tool = AsyncMock(return_value={"total_revenue": "500.00"})
+
+    with (
+        patch("app.agent.insights.GeminiClient", return_value=mock_client),
+        patch.dict(
+            "app.agent.insights.TOOL_DISPATCH",
+            {
+                "get_revenue_summary": SimpleNamespace(
+                    func=fake_tool,
+                    parse_args=lambda a: {
+                        "restaurant_id": uuid.UUID(a["restaurant_id"]),
+                        "start_date": a["start_date"],
+                        "end_date": a["end_date"],
+                    },
+                )
+            },
+        ),
+    ):
+        result = await answer_question(_RID, "what was my revenue?")
+
+    assert result.answer == "Deep answer."
+    assert result.model == PRO_MODEL
+    final_call_kwargs = mock_client.generate_turn.await_args_list[-1].kwargs
+    assert final_call_kwargs["model"] == PRO_MODEL
+
+
+async def test_deeper_analysis_keyword_escalates_single_round_turn():
+    mock_client = AsyncMock()
+    mock_client.generate_turn = AsyncMock(return_value=FinalAnswer(text="Deep dive answer."))
+
+    with patch("app.agent.insights.GeminiClient", return_value=mock_client):
+        result = await answer_question(_RID, "Can you give me a deep dive on last month?")
+
+    assert result.model == PRO_MODEL
+    mock_client.generate_turn.assert_awaited_once_with(
+        history=[UserText("Can you give me a deep dive on last month?")],
+        tools=INSIGHTS_TOOLS,
+        system_instruction=mock_client.generate_turn.await_args.kwargs["system_instruction"],
+        model=PRO_MODEL,
+    )

@@ -17,10 +17,11 @@ ask-sous/
       main.py              # FastAPI entrypoint
       api/                 # route handlers (chat, campaigns, restaurants)
       agent/                # agent orchestration
-        llm_client.py        # GeminiClient — Vertex AI chat/function-calling SDK boundary
+        llm_client.py        # GeminiClient — Vertex AI chat/function-calling SDK boundary; FLASH_MODEL/PRO_MODEL
         embedding_client.py  # EmbeddingClient — Vertex AI embedding SDK boundary
         tool_registry.py     # INSIGHTS_TOOLS / TOOL_DISPATCH — the six LLM-callable tools
-        insights.py          # answer_question() orchestration loop
+        insights.py          # answer_question() orchestration loop + _select_model() routing heuristic
+        campaigns.py         # generate_campaign() — single retrieve-then-generate turn, always PRO_MODEL
         tools/              # aggregation tools, raw SQL tool, vector search tool
           db.py               # the ONLY module here permitted to open a DB connection (readonly_connection())
           revenue_summary.py
@@ -29,8 +30,10 @@ ask-sous/
           cohort_comparison.py
           raw_sql.py          # run_readonly_query() — sqlglot-validated, row-capped, timed-out
           vector_search.py    # search_reviews()/search_similar_campaigns() — pgvector similarity
-        routing.py          # model-routing heuristic
+          restaurant_lookup.py # get_brand_voice_guide(), restaurant_exists() — shared by /chat and /campaigns
         prompts/
+          insights_system_instruction.py
+          campaign_system_instruction.py
       db/
         models.py           # SQLAlchemy models
         session.py
@@ -111,7 +114,9 @@ ask-sous/
 - **Pure/impure split** — every `app/agent/tools/` module separates a pure computation function (`_summarize_daily_rows`, `_build_item_velocities`, `_prior_period`/`_compare`, `_ratio`, `_validate_select_only`/`_enforce_row_cap`) that takes plain data and returns a dataclass, no DB/event loop involved, from a thin `async def get_x()` wrapper that fetches rows and delegates to it. Established in Phase 1 (`generators.py`/`seed.py`) and carried forward in Phases 2–3 — keep following it for Phase 4's vector search tool, since it's what makes the fast, DB-free unit-test layer possible at all.
 - **`app/agent/llm_client.py` and `app/agent/embedding_client.py` are the only modules in `app/agent/` or `app/api/` permitted to import `google.genai`.** `GeminiClient` accepts and returns only this app's own frozen dataclasses (`ToolDeclaration`, `UserText`/`ModelToolCalls`/`ToolResultsTurn`, `ToolCallRequest`/`FinalAnswer`); `EmbeddingClient.embed_texts()` accepts `list[str]` and returns `list[list[float]]` — neither ever exposes a raw SDK type — so every layer above them (`tool_registry.py`, `insights.py`, `chat.py`, `vector_search.py`, `embed_seed_data.py`) is testable with plain `AsyncMock` and zero GCP dependency. Verify with `grep -rn "from google" app/agent/ app/api/` — it should show hits only in `llm_client.py` and `embedding_client.py`. Both adapters catch `google.auth.exceptions.GoogleAuthError` alongside SDK-level errors when translating to `AgentUnavailableError` — a missing/invalid credentials failure (this environment's current default state) needs the same translation as a rate limit or outage. See `docs/decisions/007-gemini-model-selection-and-client-adapter.md` and `docs/decisions/008-embedding-model-and-client-adapter.md`.
 - **Six LLM-callable tools** (`INSIGHTS_TOOLS`/`TOOL_DISPATCH` in `tool_registry.py`): the four Phase 2 aggregation tools, `run_readonly_query` (Phase 3), and `search_customer_reviews` (Phase 4, pgvector similarity search over `reviews.embedding` — see `docs/decisions/009-vector-retrieval-tool-design.md`). Qualitative questions about customer sentiment must go through `search_customer_reviews`, never invented/paraphrased review content — enforced via the system instruction in `app/agent/prompts/insights_system_instruction.py`, same "no naked numbers"-style discipline applied to qualitative claims. `search_similar_campaigns` (also in `vector_search.py`) is built but deliberately **not** registered as an LLM-callable tool — it's a plain function for Phase 5's campaign generation to call directly, not something the model decides to invoke mid-conversation.
-- **Access point:** `POST /chat` (`backend/app/api/chat.py`) — request `{restaurant_id, question}`, response `{answer, tool_calls, model}` inside the standard envelope. Checks restaurant existence via `readonly_connection()` before calling `answer_question()`; never imports `llm_client` directly.
+- **Access point:** `POST /chat` (`backend/app/api/chat.py`) — request `{restaurant_id, question}`, response `{answer, tool_calls, model}` inside the standard envelope. Checks restaurant existence via the shared `restaurant_exists()` helper (`app/agent/tools/restaurant_lookup.py`) before calling `answer_question()`; never imports `llm_client` directly.
+- **Model routing (Phase 5):** insights Q&A defaults to `FLASH_MODEL`, escalating to `PRO_MODEL` per-round via `_select_model()` in `insights.py` — either immediately, if the question matches a "deeper analysis" keyword (`"deep dive"`, `"thorough"`, etc.), or once a turn has already needed `ESCALATION_TOOL_CALL_THRESHOLD` (3) rounds without reaching a final answer. Campaign generation (`app/agent/campaigns.py`) always uses `PRO_MODEL` unconditionally — no routing decision there. Every routing choice is logged on `agent_turn_model_selected` with a `routing_reason` (`"default"` / `"tool_call_threshold"` / `"keyword"`). See `docs/decisions/010-model-routing-heuristic.md`.
+- **Campaign generation (Phase 5):** `POST /campaigns` (`backend/app/api/campaigns.py`) — request `{restaurant_id, brief}`, response `{copy_text, examples_used, model}`. Unlike `answer_question()`'s open-ended tool-calling loop, `generate_campaign()` is a single retrieve-then-generate turn: fetch `restaurants.brand_voice_guide` via `get_brand_voice_guide()`, retrieve up to `CAMPAIGN_EXAMPLE_TOP_K` (2) similar past campaigns via `search_similar_campaigns()`, build the system instruction (`build_campaign_system_instruction()`), then one `GeminiClient.generate_turn()` call with `tools=[]` on `PRO_MODEL` — the model can only return text, never a tool call, since no tools are offered. Proceeds normally (not an error) when zero past campaigns are found. Logs `campaign_turn_started`/`campaign_examples_retrieved`/`campaign_turn_completed`, same per-turn `turn_id`-correlated audit pattern as `answer_question()`. Does not persist generated copy back to the `campaigns` table — copy is returned to the caller only, not auto-saved.
 
 ### State management (frontend)
 - Server state: TanStack Query.

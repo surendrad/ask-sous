@@ -3,15 +3,12 @@ import uuid
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import text
 
 from app.agent.insights import answer_question
-from app.agent.tools.db import readonly_connection
+from app.agent.tools.restaurant_lookup import restaurant_exists
 from app.core.responses import error_response, success
 
 router = APIRouter()
-
-_RESTAURANT_EXISTS_SQL = text("SELECT 1 FROM restaurants WHERE id = :restaurant_id")
 
 
 class ChatRequest(BaseModel):
@@ -32,15 +29,9 @@ class ChatResponseData(BaseModel):
     model: str
 
 
-async def _restaurant_exists(restaurant_id: uuid.UUID) -> bool:
-    async with readonly_connection() as conn:
-        result = await conn.execute(_RESTAURANT_EXISTS_SQL, {"restaurant_id": restaurant_id})
-        return result.first() is not None
-
-
 @router.post("/chat")
 async def chat(payload: ChatRequest) -> dict:
-    if not await _restaurant_exists(payload.restaurant_id):
+    if not await restaurant_exists(payload.restaurant_id):
         return JSONResponse(
             status_code=404,
             content=error_response("Restaurant not found.", "restaurant_not_found"),

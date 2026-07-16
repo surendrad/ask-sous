@@ -158,6 +158,8 @@ The **MVP is Phases 0–6**: foundation through a working frontend covering both
 
 ## Phase 5: Campaign Generation
 
+**Status:** ✅ Buildable and tested (2026-07-16). Plan: `docs/plans/phase-5-campaign-generation.md`. See `docs/changelog.md` for what shipped. **Live-credentials gap** (same caveat as Phases 3–4): everything is built and verified against fixture/mocked Vertex AI responses and hand-crafted vectors. UAT-5.1 through UAT-5.4 are completable now; UAT-5.5 and UAT-5.6 explicitly require live Vertex AI credentials and remain unverified until then.
+
 **Goal:** Grounded campaign copy, with model routing demonstrating the fast/cheap-default-escalate-when-it-matters pattern.
 
 ### 5.1 Campaign tool/prompt path

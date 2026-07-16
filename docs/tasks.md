@@ -345,3 +345,54 @@ Status indicators: ⬜ Not Started · 🟧 In Progress · 🟩 Done · 🟥 Bloc
 - 🟩 Update `docs/reference/seed-patterns.md` with embedding-column state notes
 - 🟩 Update `docs/definition/implementation-plan.md` to mark Phase 4 status (with live-credentials caveat)
 - 🟩 Update `.env.example` if new env vars are introduced (none needed — confirmed)
+
+## Phase 5: Campaign Generation
+
+### 5.1 Model routing (insights loop)
+
+- 🟩 Write failing unit tests for `_select_model` (default Flash, threshold escalation, keyword escalation, case-insensitivity)
+- 🟩 Implement `_select_model` and `PRO_MODEL` constant
+- 🟩 Write a failing unit test asserting a 4th-round tool-calling turn escalates to `PRO_MODEL`
+- 🟩 Wire `_select_model` into `answer_question()`'s loop
+- 🟩 Update `agent_turn_model_selected` log call with `routing_reason`
+- 🟩 Write a failing unit test asserting the keyword path escalates a single-round turn
+- 🟩 Confirm/update existing Phase 3 tests that assumed a hardcoded model
+
+### 5.2 Brand voice lookup
+
+- 🟩 Write a failing unit test for `get_brand_voice_guide` (found + not-found cases)
+- 🟩 Implement `get_brand_voice_guide` in `app/agent/tools/restaurant_lookup.py`
+
+### 5.3 Campaign system instruction
+
+- 🟩 Write a failing unit test for `build_campaign_system_instruction` (with examples, without examples)
+- 🟩 Implement `build_campaign_system_instruction`
+
+### 5.4 Campaign generation orchestration
+
+- 🟩 Write a failing unit test for `generate_campaign` (happy path, mocked dependencies)
+- 🟩 Implement `generate_campaign` in `app/agent/campaigns.py`
+- 🟩 Write a failing unit test asserting zero-match retrieval still succeeds
+- 🟩 Write a failing unit test asserting audit log events are emitted with expected fields
+
+### 5.5 `/campaigns` API endpoint
+
+- 🟩 Write a failing integration test for the endpoint (404 + success shape)
+- 🟩 Implement `app/api/campaigns.py` and register the router in `app/main.py` (also extracted a shared `restaurant_exists()` helper into `restaurant_lookup.py`, replacing the duplicated private helper in both `chat.py` and `campaigns.py`)
+- 🟩 Write a failing end-to-end integration test against the seeded test DB
+- 🟩 Implement/wire whatever the end-to-end test reveals is still missing (nothing further needed)
+
+### 5.X Testing (cross-cutting)
+
+- 🟩 Full-suite pass, no regressions (217 passed)
+- 🟩 `ruff check . && ruff format --check .`
+- 🟩 Manual: trace one campaign generation call's log lines end-to-end (traced via `test_campaigns.py::test_generate_campaign_emits_audit_log_events` — confirms `campaign_turn_started` → `campaign_examples_retrieved` → `campaign_turn_completed` with expected fields; real Vertex AI log content deferred to UAT-5.1)
+
+### 5.Y Documentation
+
+- 🟩 Update `docs/uat.md` with UAT-5.1 through UAT-5.6
+- 🟩 Update `docs/changelog.md` with Phase 5 completion summary
+- 🟩 Write `docs/decisions/010-model-routing-heuristic.md`
+- 🟩 Update `CLAUDE.md` (new `/campaigns` endpoint, `restaurant_lookup.py`, routing heuristic summary, corrected stale `routing.py` reference)
+- 🟩 Update `docs/definition/implementation-plan.md` to mark Phase 5 status
+- 🟩 Update `.env.example` if new env vars are introduced (none needed — confirmed)

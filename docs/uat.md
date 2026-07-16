@@ -287,3 +287,80 @@ Status indicators: ⬜ Not Started · ✅ Passed · ❌ Failed
 **Expected:**
 
 - The reviews returned by `search_customer_reviews` in the response's `tool_calls` are genuinely topically relevant (mention service speed, waiting, etc.) rather than semantically unrelated matches, and the final answer's characterisation of customer sentiment is faithful to what those specific reviews say.
+
+## Phase 5: Campaign Generation
+
+### UAT-5.1: Owner requests a campaign and receives copy grounded in their brand voice
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. Send a `POST /campaigns` request for a seeded restaurant with a brief (e.g. "Announce our new weekend brunch special").
+
+**Expected:**
+
+- The response's `copy_text` is present, non-empty, and its tone is plausibly consistent with that restaurant's `brand_voice_guide` (spot-check by reading both side by side); `model` is `gemini-2.5-pro`.
+
+### UAT-5.2: Campaign copy reflects retrieved past-campaign style when similar past campaigns exist
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. With at least one past campaign embedded for a restaurant (via `embed_seed_data.py` once live credentials exist, or a hand-embedded fixture row), send a `POST /campaigns` request with a brief similar in theme to that past campaign.
+
+**Expected:**
+
+- `examples_used` in the response is non-empty and names a real campaign from that restaurant; the generated copy's style is plausibly influenced by the retrieved example rather than generic.
+
+### UAT-5.3: Campaign generation for a restaurant with no past campaign examples still succeeds
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. Send a `POST /campaigns` request for a restaurant with no embedded past campaigns (the default state before `embed_seed_data.py` has been run against live credentials).
+
+**Expected:**
+
+- The request still succeeds (200, not an error); `examples_used` is an empty list; the generated copy is still grounded in the brand voice guide alone.
+
+### UAT-5.4: A simple insights question still routes to Flash
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. Ask a straightforward insights question (e.g. "how much revenue did I make last week?") via `POST /chat`.
+2. Inspect the server logs for the `agent_turn_model_selected` event(s) for that turn.
+
+**Expected:**
+
+- Every `agent_turn_model_selected` event for the turn shows `model=gemini-2.5-flash` and `routing_reason=default`; the response's `model` field is `gemini-2.5-flash`.
+
+### UAT-5.5: A complex, multi-tool-call insights question escalates to Pro mid-turn
+
+**Status:** ⬜ Not Started (requires live Vertex AI credentials)
+
+**Steps:**
+
+1. Ask a question likely to require several rounds of investigation (e.g. a broad, open-ended "what's going on with my business lately?" style question) via `POST /chat`.
+2. Inspect the server logs for the sequence of `agent_turn_model_selected` events for that turn.
+
+**Expected:**
+
+- The turn starts on `gemini-2.5-flash`/`routing_reason=default`, and — once it has genuinely needed 3+ tool-call rounds without a final answer — a later `agent_turn_model_selected` event in the same `turn_id` shows `model=gemini-2.5-pro`/`routing_reason=tool_call_threshold`; the final response's `model` field is `gemini-2.5-pro`.
+
+### UAT-5.6: An explicit "give me a deep dive" question routes straight to Pro
+
+**Status:** ⬜ Not Started (requires live Vertex AI credentials)
+
+**Steps:**
+
+1. Ask a question explicitly requesting deeper analysis (e.g. "Can you give me a deep dive on my weekday vs weekend performance?") via `POST /chat`.
+2. Inspect the server logs for the `agent_turn_model_selected` event(s) for that turn.
+
+**Expected:**
+
+- The very first `agent_turn_model_selected` event for the turn (round 0, before any tool call) already shows `model=gemini-2.5-pro`/`routing_reason=keyword`, not just a later one.

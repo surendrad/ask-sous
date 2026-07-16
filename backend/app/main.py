@@ -3,7 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.agent.exceptions import AgentIncompleteError, AgentUnavailableError
-from app.api import chat, health
+from app.api import campaigns, chat, health
 from app.core.errors import (
     agent_incomplete_exception_handler,
     agent_unavailable_exception_handler,
@@ -28,6 +28,7 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(chat.router)
+app.include_router(campaigns.router)
 
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(AgentUnavailableError, agent_unavailable_exception_handler)
