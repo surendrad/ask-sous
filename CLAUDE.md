@@ -73,7 +73,6 @@ ask-sous/
         restaurant-context.tsx  # shared multi-select restaurant state (React Context) — selectedRestaurantIds: string[]
     tests/
     package.json
-  docker-compose.yml
   .env.example
   docs/
   CLAUDE.md
@@ -85,9 +84,9 @@ ask-sous/
 
 ## Development Commands
 
-- `docker-compose up` — start Postgres + backend (requires Docker; see note below).
+- `brew install postgresql@17 pgvector && brew services start postgresql@17` — one-time local Postgres + pgvector setup (macOS). Create the admin role/database matching your `.env`, then proceed with the commands below. (pgvector's Homebrew formula targets Postgres 17/18, not 16 — fine for local dev/testing, since the migration SQL itself is version-independent.)
 - `cd backend && python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"` — one-time backend environment setup. Requires Python **>=3.12** (whatever `python3` resolves to locally, as long as it satisfies that minimum).
-- `cd backend && alembic upgrade head` — run migrations (needs `DATABASE_URL` reachable — either via `docker-compose up` or a local Postgres+pgvector instance).
+- `cd backend && alembic upgrade head` — run migrations (needs `DATABASE_URL` reachable — a local Postgres+pgvector instance).
 - `cd backend && python -m app.seed.seed` — seed the database (idempotent, deterministic — see `docs/reference/seed-patterns.md`).
 - `cd backend && python -m app.seed.embed_seed_data` — populate `reviews`/`campaigns.embedding` via Vertex AI (requires live GCP credentials — see `docs/reference/gcp-setup.md`; fails cleanly with `AgentUnavailableError` without them).
 - `cd backend && pytest` — backend tests.
@@ -98,8 +97,6 @@ ask-sous/
 - `cd frontend && npm run build` — type-check + production build.
 - `cd frontend && npm run lint` / `npm run format` — Biome check / check --write.
 - `pre-commit run --all-files` — lint/format checks via both hooks at once, **once `git init` has been run** (pre-commit needs a `.git` directory; run `pre-commit install` at that point too).
-
-**Local Postgres without Docker:** if Docker isn't available, `brew install postgresql@17 pgvector` (pgvector's Homebrew formula targets Postgres 17/18, not 16, so this diverges from the `pgvector/pgvector:pg16` image `docker-compose.yml` uses — fine for local dev/testing, since the migration SQL itself is version-independent). Create the admin role/database matching your `.env`, then proceed with the commands above.
 
 ## Conventions
 

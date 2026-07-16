@@ -50,7 +50,7 @@ Never read the contents of an existing `.env` back to the user in full (it may c
 
 ## Step 3: Database
 
-Use a local PostgreSQL install with `pgvector` — this is the verified working setup (a `docker-compose.yml` exists in the repo, but Docker itself isn't installed or tested in this environment; don't present it as an option here).
+Use a local PostgreSQL install with `pgvector` — this is the verified working setup for this project. There is no `docker-compose.yml`; don't suggest Docker as an option.
 
 1. **Install Postgres + pgvector** if not already present:
    - macOS: `brew install postgresql@17 pgvector` (pgvector's Homebrew formula targets Postgres 17/18, not 16 — that's fine, the migration SQL itself is version-independent).
