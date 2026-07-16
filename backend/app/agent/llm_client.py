@@ -121,6 +121,24 @@ def _to_function_declaration(declaration: ToolDeclaration) -> types.FunctionDecl
     )
 
 
+def _build_config(
+    tools: list[ToolDeclaration], system_instruction: str | None
+) -> types.GenerateContentConfig:
+    # A types.Tool with an empty function_declarations list is rejected by
+    # the real API ("tools[0].tool_type: required one_of 'tool_type' must
+    # have one initialized field") — only mocked tests ever exercised this
+    # path, so it went unnoticed until a live call (campaigns.py always
+    # calls generate_turn() with tools=[]) surfaced it. Omit `tools`
+    # entirely from the config when there are none to send, rather than
+    # sending an empty-but-present Tool object.
+    if not tools:
+        return types.GenerateContentConfig(system_instruction=system_instruction)
+    return types.GenerateContentConfig(
+        tools=[types.Tool(function_declarations=[_to_function_declaration(t) for t in tools])],
+        system_instruction=system_instruction,
+    )
+
+
 def _entry_to_content(entry: ConversationEntry) -> types.Content:
     if isinstance(entry, UserText):
         return types.Content(role="user", parts=[types.Part(text=entry.text)])
@@ -164,10 +182,7 @@ class GeminiClient:
         model: str = FLASH_MODEL,
     ) -> list[ToolCallRequest] | FinalAnswer:
         contents = [_entry_to_content(entry) for entry in history]
-        config = types.GenerateContentConfig(
-            tools=[types.Tool(function_declarations=[_to_function_declaration(t) for t in tools])],
-            system_instruction=system_instruction,
-        )
+        config = _build_config(tools, system_instruction)
         try:
             response = await asyncio.to_thread(
                 self._client.models.generate_content,
@@ -210,10 +225,7 @@ class GeminiClient:
         (a tool-calling round — no text was ever streamed for it) or one
         FinalAnswer (the concatenation of every TextChunk already yielded)."""
         contents = [_entry_to_content(entry) for entry in history]
-        config = types.GenerateContentConfig(
-            tools=[types.Tool(function_declarations=[_to_function_declaration(t) for t in tools])],
-            system_instruction=system_instruction,
-        )
+        config = _build_config(tools, system_instruction)
         try:
             stream = await asyncio.to_thread(
                 self._client.models.generate_content_stream,

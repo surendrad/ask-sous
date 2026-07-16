@@ -10,6 +10,7 @@ from app.agent.llm_client import (
     ModelToolCalls,
     TextChunk,
     ToolCallRequest,
+    ToolDeclaration,
     UserText,
 )
 from app.core.config import Settings
@@ -73,6 +74,49 @@ async def test_generate_turn_translates_text_response_to_final_answer():
     result = await client.generate_turn(history=[UserText("what was my revenue?")], tools=[])
 
     assert result == FinalAnswer(text="Revenue was $1,234.")
+
+
+async def test_generate_turn_omits_tools_from_config_when_none_given():
+    # A real Vertex AI call rejects types.Tool(function_declarations=[]) —
+    # "tools[0].tool_type: required one_of 'tool_type' must have one
+    # initialized field" — only discovered via a live call, since mocked
+    # tests never validate the config against the real API. campaigns.py
+    # always calls generate_turn() with tools=[], so this path matters.
+    client = GeminiClient(settings=_settings())
+    client._client = MagicMock()
+    client._client.models.generate_content = MagicMock(
+        return_value=types.GenerateContentResponse(
+            candidates=[
+                types.Candidate(content=types.Content(role="model", parts=[types.Part(text="hi")]))
+            ]
+        )
+    )
+
+    await client.generate_turn(history=[UserText("hi")], tools=[])
+
+    sent_config = client._client.models.generate_content.call_args.kwargs["config"]
+    assert sent_config.tools is None
+
+
+async def test_generate_turn_includes_tools_in_config_when_given():
+    client = GeminiClient(settings=_settings())
+    client._client = MagicMock()
+    client._client.models.generate_content = MagicMock(
+        return_value=types.GenerateContentResponse(
+            candidates=[
+                types.Candidate(content=types.Content(role="model", parts=[types.Part(text="hi")]))
+            ]
+        )
+    )
+
+    await client.generate_turn(
+        history=[UserText("hi")],
+        tools=[ToolDeclaration(name="get_revenue_summary", description="d", parameters={})],
+    )
+
+    sent_config = client._client.models.generate_content.call_args.kwargs["config"]
+    assert sent_config.tools is not None
+    assert len(sent_config.tools) == 1
 
 
 async def test_generate_turn_translates_api_error_to_agent_unavailable():
@@ -143,6 +187,20 @@ async def test_generate_turn_stream_yields_no_chunks_for_tool_call_response():
             calls=[ToolCallRequest(name="get_revenue_summary", args={"restaurant_id": "abc"})]
         )
     ]
+
+
+async def test_generate_turn_stream_omits_tools_from_config_when_none_given():
+    client = GeminiClient(settings=_settings())
+    client._client = MagicMock()
+    client._client.models.generate_content_stream = MagicMock(
+        return_value=iter([_text_chunk_response("hi")])
+    )
+
+    async for _event in client.generate_turn_stream(history=[UserText("hi")], tools=[]):
+        pass
+
+    sent_config = client._client.models.generate_content_stream.call_args.kwargs["config"]
+    assert sent_config.tools is None
 
 
 async def test_generate_turn_stream_translates_mid_stream_error_to_agent_unavailable():

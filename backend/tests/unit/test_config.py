@@ -86,3 +86,27 @@ def test_settings_loads_readonly_db_password(monkeypatch):
     settings = Settings(_env_file=None)
 
     assert settings.readonly_db_password == REQUIRED_ENV["READONLY_DB_PASSWORD"]
+
+
+def test_constructing_settings_exports_google_application_credentials_to_os_environ(monkeypatch):
+    import os
+
+    from app.core.config import Settings
+
+    _clear_env(monkeypatch)
+    # Deliberately construct Settings entirely from constructor kwargs, not
+    # env vars/`.env` — this proves the export happens as a side effect of
+    # building a Settings instance, not because the value merely happened
+    # to already be in os.environ beforehand (monkeypatch.setenv would have
+    # put it there directly, which wouldn't actually test our code's
+    # behavior).
+    Settings(_env_file=None, **{k.lower(): v for k, v in REQUIRED_ENV.items()})
+
+    # google.auth.default() (used by both GeminiClient and EmbeddingClient
+    # under the hood) reads this OS environment variable directly — it has
+    # no knowledge of our own pydantic Settings object, so the value must
+    # actually be exported, not just parsed into Settings.
+    assert (
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+        == REQUIRED_ENV["GOOGLE_APPLICATION_CREDENTIALS"]
+    )

@@ -41,3 +41,5 @@
 ## Verification (do this once Phase 3 exists)
 
 Phase 3 will be the first phase to make a live call. If it fails with an auth or permission error, re-check steps 4–6 first — a misconfigured service account won't surface until then.
+
+**Status: completed (2026-07-16).** Project `your-gcp-project-id` (display name "ask-sous-dev"), service account `ask-sous-agent@your-gcp-project-id.iam.gserviceaccount.com` with the Vertex AI User role, key stored at `~/secrets/ask-sous-key.json` (outside the repo tree). Real calls confirmed working end-to-end: insights Q&A, streaming, function-calling, campaign generation, and embeddings (`embed_seed_data.py` run for real — 138 reviews + 16 campaigns embedded). Two real bugs and one real UX gap were found and fixed during this verification pass — see `docs/decisions/013-live-credentials-verification.md` for full detail; none of them were about GCP setup itself being wrong, all were latent bugs in this app's own code that only a live call could surface.

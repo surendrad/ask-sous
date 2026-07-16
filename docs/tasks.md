@@ -494,3 +494,14 @@ Status indicators: ⬜ Not Started · 🟧 In Progress · 🟩 Done · 🟥 Bloc
 - 🟩 Write `docs/decisions/012-live-trickle-generator.md` (trickle generator + Recharts-vs-CSS-bars reconciliation)
 - 🟩 Update `CLAUDE.md`
 - 🟩 Update `docs/definition/implementation-plan.md` to mark Phase 7 status
+
+## Live Credentials Verification (post-Phase 7)
+
+- 🟩 Complete `docs/reference/gcp-setup.md` for real (project `your-gcp-project-id`, service account + Vertex AI User role, key stored outside the repo)
+- 🟩 Fix: `GOOGLE_APPLICATION_CREDENTIALS` parsed into `Settings` but never exported to the OS environment (`google.auth.default()` reads it directly) — added `Settings.model_post_init()`, with a regression test
+- 🟩 Fix: real Vertex AI API rejects an empty-but-present `types.Tool(function_declarations=[])`, breaking every real `campaigns.py` call (`tools=[]` by design) — added a shared `_build_config()` helper in `llm_client.py` that omits `tools` when empty, with regression tests for both `generate_turn`/`generate_turn_stream`
+- 🟩 Fix: insights system instruction never told the model what "today" is, causing hallucinated `today()`/`timedelta()` tool calls on relative-date questions — added a `today` parameter to `build_insights_system_instruction()`
+- 🟩 Verified end-to-end against the real live API: insights Q&A (correct date resolution + real grounded answer), streaming, function-calling, campaign generation with real few-shot retrieval, `embed_seed_data.py` run for real (138 reviews + 16 campaigns embedded, confirmed 768-dim vectors)
+- 🟩 Write `docs/decisions/013-live-credentials-verification.md`
+- 🟩 Update `docs/changelog.md`, `docs/reference/gcp-setup.md`
+- 🟩 Full backend suite passing (244 tests)

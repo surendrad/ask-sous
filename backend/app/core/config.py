@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -26,6 +27,14 @@ class Settings(BaseSettings):
     gcp_region: str
     enable_trickle: bool = False
     readonly_db_password: str
+
+    def model_post_init(self, __context: object) -> None:
+        # google.auth.default() (the ADC mechanism both GeminiClient and
+        # EmbeddingClient rely on) reads GOOGLE_APPLICATION_CREDENTIALS
+        # directly from the OS environment — it has no knowledge of this
+        # Settings object. Parsing the value into `.env`/pydantic alone
+        # isn't enough; it must also actually be exported.
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.google_application_credentials
 
 
 @lru_cache
