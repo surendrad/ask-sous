@@ -1,0 +1,374 @@
+<meta charset="utf-8">
+<title>Ask Sous — Layout Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  :root {
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px; --radius-xl: 20px; --radius-full: 999px;
+    --font-ui: 'Inter', system-ui, sans-serif; --font-display: 'Fraunces', serif; --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  [data-theme="dark"] {
+    --base: #150f0b; --surface: #1d1611; --elevated: #261d17; --overlay: #2f251d;
+    --border: #3a2d22; --border-strong: #4a3a2c;
+    --text: #f8ede4; --text-secondary: #cbb6a5; --text-muted: #8f7a67;
+    --brand: #ec6a3e; --on-brand: #1c0c04; --brand-wash: rgba(236,106,62,0.16); --brand-text: #f4936c;
+    --success: #65c179; --success-wash: rgba(101,193,121,0.16); --success-text: #8fd6a0;
+    --error: #f0665f; --error-wash: rgba(240,102,95,0.16); --error-text: #f5928c;
+    --warning-text: #f0c05c; --warning-wash: rgba(240,180,60,0.16);
+    --info-text: #7fb0fb; --info-wash: rgba(110,168,254,0.16);
+    --shadow-e1: 0 1px 2px rgba(0,0,0,0.3); --shadow-e2: 0 8px 24px rgba(0,0,0,0.35); --shadow-e3: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  [data-theme="light"] {
+    --base: #fffaf6; --surface: #fbf2ea; --elevated: #ffffff; --overlay: #f6e9dd;
+    --border: #ecdbc9; --border-strong: #ddc4a8;
+    --text: #241811; --text-secondary: #5f4a3b; --text-muted: #8c7663;
+    --brand: #c8471f; --on-brand: #ffffff; --brand-wash: rgba(200,71,31,0.10); --brand-text: #b03e1a;
+    --success: #15803d; --success-wash: rgba(21,128,61,0.10); --success-text: #15803d;
+    --error: #c0392b; --error-wash: rgba(192,57,43,0.10); --error-text: #c0392b;
+    --warning-text: #93650c; --warning-wash: rgba(180,120,10,0.12);
+    --info-text: #1d4ed8; --info-wash: rgba(29,78,216,0.10);
+    --shadow-e1: 0 1px 2px rgba(36,24,17,0.05); --shadow-e2: 0 4px 16px rgba(36,24,17,0.08); --shadow-e3: 0 20px 60px rgba(36,24,17,0.18);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font-ui); background: var(--base); color: var(--text); padding: 0 0 120px; }
+  .topbar { position: sticky; top: 0; z-index: 50; background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; justify-content: space-between; align-items: center; }
+  .topbar h1 { font-family: var(--font-display); font-size: 18px; font-weight: 600; margin: 0; }
+  .mode-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .mode-toggle button { font-family: var(--font-ui); font-size: 12.5px; padding: 7px 14px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; }
+  .mode-toggle button.active { background: var(--elevated); color: var(--text); }
+
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+  section { margin-top: 52px; }
+  section h2 { font-family: var(--font-display); font-size: 23px; font-weight: 600; margin: 0 0 4px; }
+  section .section-desc { color: var(--text-muted); font-size: 13px; margin: 0 0 20px; max-width: 76ch; line-height: 1.55; }
+
+  .approach-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .approach-grid { grid-template-columns: 1fr; } }
+  .approach-card { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); }
+  .approach-card .ac-head { padding: 16px 18px; border-bottom: 1px solid var(--border); }
+  .approach-card .ac-head h3 { margin: 0 0 4px; font-size: 15.5px; }
+  .approach-card .ac-head p { margin: 0; font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+  .approach-card .ac-frame { padding: 14px; }
+  .select-btn { display: block; margin: 0 18px 18px; padding: 10px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--elevated); color: var(--text); font-family: var(--font-ui); font-size: 13px; font-weight: 600; cursor: pointer; width: calc(100% - 36px); }
+  .select-btn:hover { border-color: var(--brand); }
+  .select-btn.selected { background: var(--brand-wash); border-color: var(--brand); color: var(--brand-text); }
+  .select-btn.selected::before { content: "✓ Selected — "; }
+
+  /* App shell */
+  .shell { display: grid; grid-template-columns: 224px 1fr; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--base); box-shadow: var(--shadow-e2); }
+  .shell.split { grid-template-columns: 224px 1.6fr 1fr; }
+  .shell .side { background: var(--surface); border-right: 1px solid var(--border); padding: 16px 12px; display: flex; flex-direction: column; }
+  .shell .brand-mark { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 600; font-size: 15px; padding: 4px 8px 16px; }
+  .shell .brand-dot { width: 22px; height: 22px; border-radius: 7px; background: var(--brand); display: inline-flex; align-items: center; justify-content: center; color: var(--on-brand); }
+  .shell .switcher { background: var(--elevated); border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+  .shell .switcher .name { font-size: 13px; font-weight: 600; }
+  .shell .switcher .sub { font-size: 10.5px; color: var(--text-muted); }
+  .shell .nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: var(--radius-sm); font-size: 13px; color: var(--text-secondary); margin-bottom: 2px; cursor: pointer; }
+  .shell .nav-item:hover { background: var(--overlay); color: var(--text); }
+  .shell .nav-item.active { background: var(--brand-wash); color: var(--brand-text); font-weight: 600; }
+  .shell .nav-spacer { flex: 1; }
+  .shell .nav-foot { font-size: 10.5px; color: var(--text-muted); padding: 8px 10px; border-top: 1px solid var(--border); margin-top: 8px; }
+
+  .shell .main { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; min-height: 480px; background: var(--base); }
+  .shell .main-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .shell .main-head h3 { font-family: var(--font-display); font-size: 18px; margin: 0; }
+  .shell .main-head .meta { font-size: 11.5px; color: var(--text-muted); }
+
+  .msg { max-width: 76%; padding: 11px 14px; border-radius: 12px; font-size: 13px; line-height: 1.55; }
+  .msg.user { align-self: flex-end; background: var(--brand); color: var(--on-brand); border-bottom-right-radius: 4px; }
+  .msg.agent { align-self: flex-start; background: var(--elevated); color: var(--text); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .cite { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; padding: 3px 9px; border-radius: 999px; background: var(--info-wash); color: var(--info-text); font-size: 10px; font-family: var(--font-mono); font-weight: 600; }
+  .stat-row { display: flex; gap: 10px; margin-top: 2px; }
+  .stat-card { background: var(--elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 12px; flex: 1; box-shadow: var(--shadow-e1); }
+  .stat-card .k { font-size: 10px; color: var(--text-muted); margin-bottom: 3px; }
+  .stat-card .v { font-size: 16px; font-weight: 700; color: var(--text); font-family: var(--font-mono); }
+  .stat-card .d { font-size: 10px; margin-top: 2px; font-weight: 600; }
+  .stat-card .d.up { color: var(--success-text); } .stat-card .d.down { color: var(--error-text); }
+
+  .input-bar { margin-top: auto; display: flex; gap: 8px; align-items: center; background: var(--elevated); border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: 10px 12px; }
+  .input-bar span { color: var(--text-muted); font-size: 12.5px; flex: 1; }
+  .input-bar button { background: var(--brand); color: var(--on-brand); border: none; border-radius: var(--radius-sm); padding: 6px 12px; font-size: 12px; font-weight: 700; font-family: var(--font-ui); display: inline-flex; align-items: center; gap: 5px; }
+
+  .campaign-panel { background: var(--surface); border-left: 1px solid var(--border); padding: 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .campaign-panel .cp-head { display: flex; justify-content: space-between; align-items: center; }
+  .campaign-panel .cp-head h4 { margin: 0; font-family: var(--font-display); font-size: 15px; }
+  .campaign-card { background: var(--elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; box-shadow: var(--shadow-e1); }
+  .campaign-card .cc-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .campaign-card .cc-title { font-size: 12.5px; font-weight: 700; }
+  .campaign-card .cc-channel { font-size: 9.5px; color: var(--info-text); background: var(--info-wash); padding: 2px 7px; border-radius: 999px; font-weight: 700; }
+  .campaign-card .cc-copy { font-size: 11.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 9px; }
+  .campaign-card .cc-actions { display: flex; gap: 6px; }
+  .campaign-card .cc-actions button { font-size: 11px; font-weight: 600; padding: 5px 9px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--overlay); color: var(--text); display: inline-flex; align-items: center; gap: 4px; }
+
+  .tab-strip { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+  .tab-strip .t { padding: 8px 4px; font-size: 12.5px; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; }
+  .tab-strip .t.active { color: var(--brand-text); border-bottom-color: var(--brand); font-weight: 600; }
+
+  /* Dashboard view bits */
+  .kpi-row { display: flex; gap: 10px; }
+  .chart-card { background: var(--elevated); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; box-shadow: var(--shadow-e1); flex: 1; }
+  .chart-card .ch-title { font-size: 11.5px; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; }
+  .bars { display: flex; align-items: flex-end; gap: 6px; height: 90px; }
+  .bars .bar { flex: 1; background: var(--brand); border-radius: 3px 3px 0 0; opacity: 0.85; }
+  .bars .bar.peak { opacity: 1; }
+  .bars .bar.low { background: var(--overlay); border: 1px solid var(--border-strong); }
+  .bar-labels { display: flex; gap: 6px; margin-top: 6px; }
+  .bar-labels span { flex: 1; text-align: center; font-size: 9px; color: var(--text-muted); font-family: var(--font-mono); }
+  .item-list .il-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .item-list .il-row:last-child { border-bottom: none; }
+  .il-row .il-bar-wrap { flex: 1; margin: 0 10px; height: 5px; background: var(--overlay); border-radius: 3px; overflow: hidden; }
+  .il-row .il-bar { height: 100%; background: var(--brand); }
+
+  /* Campaign grid view (Option B, full screen) */
+  .campaign-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+
+  /* Mobile frame */
+  .mobile-frame { width: 340px; border: 1px solid var(--border); border-radius: 28px; overflow: hidden; box-shadow: var(--shadow-e2); background: var(--base); }
+  .mobile-frame .m-topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .mobile-frame .m-topbar .name { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .mobile-frame .m-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; min-height: 420px; }
+  .mobile-frame .m-tabbar { display: flex; border-top: 1px solid var(--border); background: var(--surface); }
+  .mobile-frame .m-tabbar .mt { flex: 1; text-align: center; padding: 10px 0 12px; font-size: 10px; color: var(--text-muted); }
+  .mobile-frame .m-tabbar .mt.active { color: var(--brand-text); font-weight: 700; }
+  .mobile-frame .m-tabbar .mt i { display: block; margin: 0 auto 3px; }
+
+  .layout-toggle-row { display: flex; justify-content: center; margin-bottom: 20px; }
+  .layout-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .layout-toggle button { font-family: var(--font-ui); font-size: 13px; padding: 8px 16px; background: var(--surface); border: none; color: var(--text-muted); cursor: pointer; }
+  .layout-toggle button.active { background: var(--brand-wash); color: var(--brand-text); font-weight: 600; }
+
+  footer { max-width: 1280px; margin: 60px auto 0; padding: 0 24px; color: var(--text-muted); font-size: 12.5px; text-align: center; }
+</style>
+
+<div class="topbar">
+  <h1>Ask Sous — Layout Showcase</h1>
+  <div class="mode-toggle" data-global-toggle>
+    <button class="active" data-mode="dark">Dark</button>
+    <button data-mode="light">Light</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <section>
+    <h2>Layout Approach</h2>
+    <p class="section-desc">The one real structural fork: should the campaigns panel live alongside chat (split view — you watch a draft update live while still able to keep asking questions) or as its own full-screen destination you navigate to (simpler, more spacious, one thing at a time). Both use the same sidebar + restaurant switcher.</p>
+    <div class="approach-grid">
+      <div class="approach-card">
+        <div class="ac-head">
+          <h3>Option A — Split view</h3>
+          <p>Chat and the campaigns panel are visible side by side. Good demo value — you can literally watch the panel populate as the agent drafts copy without switching screens. Costs horizontal space; campaigns panel is narrow.</p>
+        </div>
+        <div class="ac-frame" id="frame-split"></div>
+        <button class="select-btn" data-select="Option A — Split view (chat + campaigns side by side)">Select this option</button>
+      </div>
+      <div class="approach-card">
+        <div class="ac-head">
+          <h3>Option B — Separate full-screen views</h3>
+          <p>Chat, Campaigns, and Dashboard are each a full-width destination reached via the sidebar. More breathing room per view, simpler mental model, easier to extend later.</p>
+        </div>
+        <div class="ac-frame" id="frame-tabs"></div>
+        <button class="select-btn" data-select="Option B — Separate full-screen views (sidebar navigation)">Select this option</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>View Mockups — Full Detail</h2>
+    <p class="section-desc">Toggle between the two approaches to see the chat view at full size. Realistic content: Golden Wok, mid-conversation about a slow Tuesday, a campaign drafted in response.</p>
+    <div class="layout-toggle-row">
+      <div class="layout-toggle" data-view-toggle>
+        <button class="active" data-view="split">Split view</button>
+        <button data-view="tabs">Separate views</button>
+      </div>
+    </div>
+    <div id="full-shell"></div>
+  </section>
+
+  <section>
+    <h2>Dashboard View</h2>
+    <p class="section-desc">Nice-to-have per the master plan — 2–3 pre-computed charts for visual demo value, not core to the agent story. Reached via the sidebar in both layout approaches.</p>
+    <div id="dashboard-shell"></div>
+  </section>
+
+  <section>
+    <h2>Mobile Layout</h2>
+    <p class="section-desc">Sidebar collapses to a bottom tab bar. On mobile, the split-view approach isn't viable at any width, so both options converge on single-screen views below the tablet breakpoint (~768px) — one less thing to design twice.</p>
+    <div style="display:flex; gap:24px; flex-wrap:wrap; justify-content:center;">
+      <div class="mobile-frame" id="mobile-chat"></div>
+      <div class="mobile-frame" id="mobile-campaigns"></div>
+    </div>
+  </section>
+</div>
+
+<footer>Ask Sous design system — showcase file, not shipped UI. Palette: Warm Ember · Type: Fraunces + Inter · Icons: Lucide.</footer>
+
+<script>
+function sidebarHTML(active) {
+  const items = [
+    ['message-circle', 'Chat', 'chat'],
+    ['megaphone', 'Campaigns', 'campaigns'],
+    ['bar-chart-3', 'Dashboard', 'dashboard'],
+  ];
+  return `
+    <div class="side">
+      <div class="brand-mark"><span class="brand-dot"><i data-lucide="sparkles" style="width:12px;height:12px;"></i></span>Ask Sous</div>
+      <div class="switcher"><span><span class="name">Golden Wok</span><br><span class="sub">Asian · Downtown</span></span><i data-lucide="chevron-down" style="width:14px;height:14px;"></i></div>
+      ${items.map(([icon,label,key]) => `<div class="nav-item ${key===active?'active':''}"><i data-lucide="${icon}" style="width:15px;height:15px;"></i>${label}</div>`).join('')}
+      <div class="nav-spacer"></div>
+      <div class="nav-foot">Live trickle: on · Flash 2.5</div>
+    </div>
+  `;
+}
+
+function chatMainHTML() {
+  return `
+    <div class="main">
+      <div class="main-head"><h3>Chat</h3><span class="meta">Golden Wok · Asian · Downtown</span></div>
+      <div class="msg user">Why was revenue down this week?</div>
+      <div class="msg agent">Tuesday revenue was $1,240 vs a 4-week avg of $1,890 — a 34% drop, mostly dinner service.<div class="cite"><i data-lucide="wrench" style="width:10px;height:10px;"></i>revenue_summary · 2 tool calls</div></div>
+      <div class="stat-row">
+        <div class="stat-card"><div class="k">This week</div><div class="v">$8,420</div><div class="d down">▼ 12%</div></div>
+        <div class="stat-card"><div class="k">Top item</div><div class="v" style="font-family:var(--font-ui);font-size:14px;">Pad See Ew</div><div class="d up">▲ 18%</div></div>
+      </div>
+      <div class="msg user">Draft an SMS campaign for it</div>
+      <div class="msg agent">Drafted — see the panel. Grounded in your brand voice guide and the "Weekend Special" campaign from March.<div class="cite"><i data-lucide="wrench" style="width:10px;height:10px;"></i>brand_voice + 2 past campaigns</div></div>
+      <div class="input-bar"><span>Ask about revenue, items, campaigns…</span><button><i data-lucide="send" style="width:12px;height:12px;"></i>Send</button></div>
+    </div>
+  `;
+}
+
+function campaignPanelHTML() {
+  return `
+    <div class="campaign-panel">
+      <div class="cp-head"><h4>Campaigns</h4><i data-lucide="plus" style="width:15px;height:15px;color:var(--text-muted);"></i></div>
+      <div class="campaign-card">
+        <div class="cc-head"><span class="cc-title">Tuesday Comeback</span><span class="cc-channel">SMS</span></div>
+        <div class="cc-copy">"Slow Tuesday? Come hungry — 15% off all noodle bowls, 5-9pm tonight only at Golden Wok."</div>
+        <div class="cc-actions"><button><i data-lucide="refresh-cw" style="width:11px;height:11px;"></i>Regenerate</button><button><i data-lucide="copy" style="width:11px;height:11px;"></i>Copy</button></div>
+      </div>
+      <div class="campaign-card" style="opacity:0.6;">
+        <div class="cc-head"><span class="cc-title">Weekend Push</span><span class="cc-channel">Email</span></div>
+        <div class="cc-copy">"This weekend only — bring a friend, split a Pad See Ew, both eat free dessert."</div>
+        <div class="cc-actions"><button><i data-lucide="refresh-cw" style="width:11px;height:11px;"></i>Regenerate</button><button><i data-lucide="copy" style="width:11px;height:11px;"></i>Copy</button></div>
+      </div>
+    </div>
+  `;
+}
+
+function campaignFullGridHTML() {
+  return `
+    <div class="main">
+      <div class="main-head"><h3>Campaigns</h3><span class="meta">2 drafts · Golden Wok</span></div>
+      <div class="campaign-grid">
+        <div class="campaign-card"><div class="cc-head"><span class="cc-title">Tuesday Comeback</span><span class="cc-channel">SMS</span></div><div class="cc-copy">"Slow Tuesday? Come hungry — 15% off all noodle bowls, 5-9pm tonight only at Golden Wok."</div><div class="cc-actions"><button><i data-lucide="refresh-cw" style="width:11px;height:11px;"></i>Regenerate</button><button><i data-lucide="copy" style="width:11px;height:11px;"></i>Copy</button></div></div>
+        <div class="campaign-card"><div class="cc-head"><span class="cc-title">Weekend Push</span><span class="cc-channel">Email</span></div><div class="cc-copy">"This weekend only — bring a friend, split a Pad See Ew, both eat free dessert."</div><div class="cc-actions"><button><i data-lucide="refresh-cw" style="width:11px;height:11px;"></i>Regenerate</button><button><i data-lucide="copy" style="width:11px;height:11px;"></i>Copy</button></div></div>
+        <div class="campaign-card" style="display:flex;align-items:center;justify-content:center;border-style:dashed;color:var(--text-muted);font-size:12px;cursor:pointer;"><i data-lucide="plus" style="width:16px;height:16px;margin-right:6px;"></i>New campaign</div>
+      </div>
+    </div>
+  `;
+}
+
+function dashboardMainHTML() {
+  const bars = [40,55,30,70,90,60,45];
+  const labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  return `
+    <div class="main">
+      <div class="main-head"><h3>Dashboard</h3><span class="meta">Last 7 days · Golden Wok</span></div>
+      <div class="kpi-row">
+        <div class="chart-card">
+          <div class="ch-title">REVENUE TREND</div>
+          <div class="bars">${bars.map((h,i)=>`<div class="bar ${h<40?'low':''} ${h>80?'peak':''}" style="height:${h}%"></div>`).join('')}</div>
+          <div class="bar-labels">${labels.map(l=>`<span>${l}</span>`).join('')}</div>
+        </div>
+        <div class="chart-card">
+          <div class="ch-title">TOP ITEMS</div>
+          <div class="item-list">
+            <div class="il-row"><span>Pad See Ew</span><div class="il-bar-wrap"><div class="il-bar" style="width:90%"></div></div><span style="font-family:var(--font-mono);">142</span></div>
+            <div class="il-row"><span>Green Curry</span><div class="il-bar-wrap"><div class="il-bar" style="width:68%"></div></div><span style="font-family:var(--font-mono);">98</span></div>
+            <div class="il-row"><span>Spring Rolls</span><div class="il-bar-wrap"><div class="il-bar" style="width:52%"></div></div><span style="font-family:var(--font-mono);">74</span></div>
+            <div class="il-row"><span>Mango Sticky Rice</span><div class="il-bar-wrap"><div class="il-bar" style="width:40%"></div></div><span style="font-family:var(--font-mono);">55</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="kpi-row" style="margin-top:2px;">
+        <div class="stat-card"><div class="k">Total revenue</div><div class="v">$8,420</div><div class="d down">▼ 12% vs last wk</div></div>
+        <div class="stat-card"><div class="k">Transactions</div><div class="v">247</div><div class="d up">▲ 3%</div></div>
+        <div class="stat-card"><div class="k">Avg rating</div><div class="v">4.6</div><div class="d up">▲ 0.2</div></div>
+      </div>
+    </div>
+  `;
+}
+
+// Mini preview frames for the approach comparison
+document.getElementById('frame-split').innerHTML = `<div class="shell split" style="transform:scale(0.82);transform-origin:top left;width:122%;">${sidebarHTML('chat')}${chatMainHTML()}${campaignPanelHTML()}</div>`;
+document.getElementById('frame-tabs').innerHTML = `<div class="shell" style="transform:scale(0.82);transform-origin:top left;width:122%;">${sidebarHTML('campaigns')}${campaignFullGridHTML()}</div>`;
+
+function renderFullShell(view) {
+  const el = document.getElementById('full-shell');
+  if (view === 'split') {
+    el.innerHTML = `<div class="shell split">${sidebarHTML('chat')}${chatMainHTML()}${campaignPanelHTML()}</div>`;
+  } else {
+    el.innerHTML = `<div class="shell">${sidebarHTML('chat')}${chatMainHTML()}</div>`;
+  }
+  if (window.lucide) lucide.createIcons();
+}
+renderFullShell('split');
+
+document.querySelectorAll('[data-view-toggle] button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-view-toggle] button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderFullShell(btn.dataset.view);
+  });
+});
+
+document.getElementById('dashboard-shell').innerHTML = `<div class="shell">${sidebarHTML('dashboard')}${dashboardMainHTML()}</div>`;
+
+// Mobile frames
+document.getElementById('mobile-chat').innerHTML = `
+  <div class="m-topbar"><span class="name"><i data-lucide="store" style="width:13px;height:13px;"></i>Golden Wok</span><i data-lucide="chevron-down" style="width:14px;height:14px;"></i></div>
+  <div class="m-body">
+    <div class="msg user" style="max-width:82%;">Why was revenue down this week?</div>
+    <div class="msg agent" style="max-width:88%;">Tuesday revenue was $1,240 vs a 4-week avg of $1,890 — 34% drop.<div class="cite"><i data-lucide="wrench" style="width:10px;height:10px;"></i>revenue_summary</div></div>
+    <div class="input-bar" style="margin-top:auto;"><span>Ask a question…</span><button><i data-lucide="send" style="width:12px;height:12px;"></i></button></div>
+  </div>
+  <div class="m-tabbar">
+    <div class="mt active"><i data-lucide="message-circle" style="width:16px;height:16px;"></i>Chat</div>
+    <div class="mt"><i data-lucide="megaphone" style="width:16px;height:16px;"></i>Campaigns</div>
+    <div class="mt"><i data-lucide="bar-chart-3" style="width:16px;height:16px;"></i>Dashboard</div>
+  </div>
+`;
+document.getElementById('mobile-campaigns').innerHTML = `
+  <div class="m-topbar"><span class="name"><i data-lucide="store" style="width:13px;height:13px;"></i>Golden Wok</span><i data-lucide="chevron-down" style="width:14px;height:14px;"></i></div>
+  <div class="m-body">
+    <div class="campaign-card"><div class="cc-head"><span class="cc-title">Tuesday Comeback</span><span class="cc-channel">SMS</span></div><div class="cc-copy">"Slow Tuesday? Come hungry — 15% off all noodle bowls, 5-9pm tonight only."</div><div class="cc-actions"><button><i data-lucide="refresh-cw" style="width:11px;height:11px;"></i>Regenerate</button></div></div>
+    <div class="campaign-card"><div class="cc-head"><span class="cc-title">Weekend Push</span><span class="cc-channel">Email</span></div><div class="cc-copy">"This weekend only — bring a friend, split a Pad See Ew."</div><div class="cc-actions"><button><i data-lucide="refresh-cw" style="width:11px;height:11px;"></i>Regenerate</button></div></div>
+  </div>
+  <div class="m-tabbar">
+    <div class="mt"><i data-lucide="message-circle" style="width:16px;height:16px;"></i>Chat</div>
+    <div class="mt active"><i data-lucide="megaphone" style="width:16px;height:16px;"></i>Campaigns</div>
+    <div class="mt"><i data-lucide="bar-chart-3" style="width:16px;height:16px;"></i>Dashboard</div>
+  </div>
+`;
+
+document.querySelectorAll('[data-global-toggle] button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-global-toggle] button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.documentElement.setAttribute('data-theme', btn.dataset.mode);
+    document.body.setAttribute('data-theme', btn.dataset.mode);
+  });
+});
+document.body.setAttribute('data-theme', 'dark');
+
+document.querySelectorAll('.select-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.select-btn').forEach(b => { b.classList.remove('selected'); b.textContent = b.dataset.select; });
+    btn.classList.add('selected');
+    btn.textContent = btn.dataset.select;
+  });
+});
+
+if (window.lucide) lucide.createIcons();
+</script>

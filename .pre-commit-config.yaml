@@ -1,0 +1,20 @@
+# Run `pre-commit install` once `git init` has been run for this repo —
+# it can't hook into a `.git` directory that doesn't exist yet.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  - repo: local
+    hooks:
+      - id: biome-check
+        name: biome check
+        entry: bash -c 'cd frontend && npx biome check --write'
+        language: system
+        files: ^frontend/
+        pass_filenames: false

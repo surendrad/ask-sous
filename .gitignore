@@ -1,0 +1,26 @@
+# Secrets
+.env
+.env.*.local
+*service-account*.json
+*credentials*.json
+*.key.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+build/
+coverage/
+
+# OS
+.DS_Store
+
+# Local tool state (not project source)
+.claude/

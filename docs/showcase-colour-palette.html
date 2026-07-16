@@ -1,0 +1,373 @@
+<meta charset="utf-8">
+<title>Ask Sous — Colour Palette Showcase</title>
+<style>
+  :root {
+    --font-ui: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font-ui);
+    background: #0a0a0c;
+    color: #e8e8ec;
+    padding: 40px 24px 120px;
+  }
+  .page-header { max-width: 1100px; margin: 0 auto 48px; }
+  .page-header h1 { font-size: 28px; margin: 0 0 8px; }
+  .page-header p { color: #9a9aa4; max-width: 70ch; line-height: 1.6; margin: 0 0 4px; }
+  .page-header .phil { font-size: 13px; color: #75757f; margin-top: 16px; }
+
+  .option {
+    max-width: 1100px;
+    margin: 0 auto 64px;
+    border: 1px solid #26262e;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #101014;
+  }
+  .option-head {
+    padding: 20px 28px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid #26262e;
+    flex-wrap: wrap;
+  }
+  .option-head h2 { margin: 0; font-size: 19px; }
+  .option-head .desc { color: #9a9aa4; font-size: 13.5px; max-width: 60ch; margin-top: 4px; }
+  .mode-toggle {
+    display: inline-flex;
+    border: 1px solid #34343e;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .mode-toggle button {
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    padding: 7px 14px;
+    background: transparent;
+    border: none;
+    color: #9a9aa4;
+    cursor: pointer;
+  }
+  .mode-toggle button.active { background: #23232b; color: #f2f2f5; }
+
+  .mockup-wrap { padding: 28px; }
+  .swatch-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+  .swatch {
+    width: 96px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 10.5px;
+  }
+  .swatch .chip { height: 48px; }
+  .swatch .label { padding: 6px 8px; background: #17171d; color: #c4c4cc; line-height: 1.4; }
+  .swatch .label b { display: block; color: #f0f0f4; font-size: 10.5px; }
+
+  .select-btn {
+    display: block;
+    margin: 24px 28px 28px;
+    padding: 12px 20px;
+    border-radius: 9px;
+    border: 1px solid #34343e;
+    background: #17171d;
+    color: #f0f0f4;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    width: calc(100% - 56px);
+    transition: all 0.15s ease;
+  }
+  .select-btn:hover { border-color: #4a4a58; background: #1c1c24; }
+  .select-btn.selected { background: #1d3a2f; border-color: #2f6b4f; color: #6fe3a8; }
+  .select-btn.selected::before { content: "✓ Selected — "; }
+
+  /* ---- Mockup base (scoped per option via data-theme) ---- */
+  .mockup {
+    border-radius: 12px;
+    border: 1px solid var(--m-border);
+    background: var(--m-base);
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    min-height: 420px;
+    overflow: hidden;
+    font-family: var(--font-ui);
+  }
+  .mockup .sidebar {
+    background: var(--m-surface);
+    border-right: 1px solid var(--m-border);
+    padding: 16px 14px;
+  }
+  .mockup .brand-mark {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 700; font-size: 14px; color: var(--m-text);
+    margin-bottom: 18px;
+  }
+  .mockup .brand-dot { width: 20px; height: 20px; border-radius: 6px; background: var(--m-brand); }
+  .mockup .switcher {
+    background: var(--m-elevated);
+    border: 1px solid var(--m-border);
+    border-radius: 8px;
+    padding: 9px 11px;
+    font-size: 12.5px;
+    color: var(--m-text);
+    margin-bottom: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mockup .switcher .sub { color: var(--m-text-muted); font-size: 10.5px; }
+  .mockup .nav-item {
+    padding: 8px 10px; border-radius: 7px; font-size: 12.5px;
+    color: var(--m-text-secondary); margin-bottom: 2px; display: flex; align-items: center; gap: 8px;
+  }
+  .mockup .nav-item.active { background: var(--m-brand-wash); color: var(--m-brand-text); font-weight: 600; }
+
+  .mockup .main { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+  .mockup .msg { max-width: 78%; padding: 11px 14px; border-radius: 12px; font-size: 13px; line-height: 1.55; }
+  .mockup .msg.user { align-self: flex-end; background: var(--m-brand); color: var(--m-on-brand); border-bottom-right-radius: 4px; }
+  .mockup .msg.agent { align-self: flex-start; background: var(--m-elevated); color: var(--m-text); border: 1px solid var(--m-border); border-bottom-left-radius: 4px; }
+  .mockup .cite {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 8px; padding: 3px 9px; border-radius: 999px;
+    background: var(--m-brand-wash); color: var(--m-brand-text);
+    font-size: 10.5px; font-family: var(--font-mono); font-weight: 600;
+  }
+  .mockup .stat-row { display: flex; gap: 10px; margin-top: 4px; }
+  .mockup .stat-card {
+    background: var(--m-elevated); border: 1px solid var(--m-border); border-radius: 10px;
+    padding: 12px 14px; flex: 1;
+  }
+  .mockup .stat-card .k { font-size: 10.5px; color: var(--m-text-muted); margin-bottom: 4px; }
+  .mockup .stat-card .v { font-size: 18px; font-weight: 700; color: var(--m-text); font-family: var(--font-mono); }
+  .mockup .stat-card .d { font-size: 10.5px; margin-top: 3px; font-weight: 600; }
+  .mockup .stat-card .d.up { color: var(--m-success); }
+  .mockup .stat-card .d.down { color: var(--m-error); }
+  .mockup .tag { display: inline-flex; padding: 3px 9px; border-radius: 6px; font-size: 10.5px; font-weight: 600; }
+  .mockup .tag.warn { background: var(--m-warning-wash); color: var(--m-warning-text); }
+  .mockup .input-bar {
+    margin-top: auto; display: flex; gap: 8px; align-items: center;
+    background: var(--m-elevated); border: 1px solid var(--m-border); border-radius: 10px; padding: 10px 12px;
+  }
+  .mockup .input-bar span { color: var(--m-text-muted); font-size: 12.5px; flex: 1; }
+  .mockup .input-bar button {
+    background: var(--m-brand); color: var(--m-on-brand); border: none; border-radius: 7px;
+    padding: 6px 12px; font-size: 12px; font-weight: 700; font-family: var(--font-ui);
+  }
+
+  footer { max-width: 1100px; margin: 40px auto 0; color: #6a6a74; font-size: 12.5px; text-align: center; }
+</style>
+
+<div class="page-header">
+  <h1>Ask Sous — Colour Palette Directions</h1>
+  <p>Three complete directions, each with a dark and light mode. All are AA-contrast checked for text-on-background pairs. Toggle each option between dark/light, then pick the one that feels right — or tell me "A but with B's brand colour," etc.</p>
+  <p class="phil">Design philosophy: grounded not decorative · calm data density · fast feels honest.</p>
+</div>
+
+<!-- OPTION A: Verified Teal -->
+<div class="option" data-option="teal">
+  <div class="option-head">
+    <div>
+      <h2>Option A — Verified Teal</h2>
+      <div class="desc">Cool, precise, trustworthy — the "your numbers are correct" feeling. Closest to a fintech/data-tool aesthetic (Linear, Vercel-adjacent).</div>
+    </div>
+    <div class="mode-toggle" data-toggle="teal">
+      <button class="active" data-mode="dark">Dark</button>
+      <button data-mode="light">Light</button>
+    </div>
+  </div>
+  <div class="mockup-wrap">
+    <div class="swatch-row" data-swatches="teal"></div>
+    <div class="mockup" data-mockup="teal" data-mode="dark"></div>
+  </div>
+  <button class="select-btn" data-select="Option A — Verified Teal">Select this option</button>
+</div>
+
+<!-- OPTION B: Warm Ember -->
+<div class="option" data-option="ember">
+  <div class="option-head">
+    <div>
+      <h2>Option B — Warm Ember</h2>
+      <div class="desc">Terracotta/amber brand tone — ties back to hospitality and warmth without tipping into "generic restaurant red." Distinctive in an interview setting.</div>
+    </div>
+    <div class="mode-toggle" data-toggle="ember">
+      <button class="active" data-mode="dark">Dark</button>
+      <button data-mode="light">Light</button>
+    </div>
+  </div>
+  <div class="mockup-wrap">
+    <div class="swatch-row" data-swatches="ember"></div>
+    <div class="mockup" data-mockup="ember" data-mode="dark"></div>
+  </div>
+  <button class="select-btn" data-select="Option B — Warm Ember">Select this option</button>
+</div>
+
+<!-- OPTION C: Signal Violet -->
+<div class="option" data-option="violet">
+  <div class="option-head">
+    <div>
+      <h2>Option C — Signal Violet</h2>
+      <div class="desc">Indigo/violet brand — the familiar "modern AI product" palette. Safe, polished, a little less distinctive than A or B.</div>
+    </div>
+    <div class="mode-toggle" data-toggle="violet">
+      <button class="active" data-mode="dark">Dark</button>
+      <button data-mode="light">Light</button>
+    </div>
+  </div>
+  <div class="mockup-wrap">
+    <div class="swatch-row" data-swatches="violet"></div>
+    <div class="mockup" data-mockup="violet" data-mode="dark"></div>
+  </div>
+  <button class="select-btn" data-select="Option C — Signal Violet">Select this option</button>
+</div>
+
+<footer>Ask Sous design system — showcase file, not shipped UI.</footer>
+
+<script>
+const PALETTES = {
+  teal: {
+    dark: {
+      base: '#0a1210', surface: '#111a18', elevated: '#192422', overlay: '#212d2a',
+      border: '#28352f', text: '#eef4f2', textSecondary: '#a3b5b0', textMuted: '#6f827c',
+      brand: '#2dd4bf', onBrand: '#04211c', brandWash: 'rgba(45,212,191,0.14)', brandText: '#5eead4',
+      success: '#4ade80', error: '#f87171', warningWash: 'rgba(245,158,11,0.16)', warningText: '#fbbf24'
+    },
+    light: {
+      base: '#ffffff', surface: '#f5faf9', elevated: '#ffffff', overlay: '#eef5f4',
+      border: '#dbe7e4', text: '#0e1a17', textSecondary: '#48605b', textMuted: '#7c928c',
+      brand: '#0d9488', onBrand: '#ffffff', brandWash: 'rgba(13,148,136,0.10)', brandText: '#0d7e73',
+      success: '#16a34a', error: '#dc2626', warningWash: 'rgba(217,119,6,0.12)', warningText: '#b45309'
+    }
+  },
+  ember: {
+    dark: {
+      base: '#150f0b', surface: '#1d1611', elevated: '#261d17', overlay: '#2f251d',
+      border: '#3a2d22', text: '#f8ede4', textSecondary: '#cbb6a5', textMuted: '#8f7a67',
+      brand: '#ec6a3e', onBrand: '#1c0c04', brandWash: 'rgba(236,106,62,0.16)', brandText: '#f4936c',
+      success: '#65c179', error: '#f0665f', warningWash: 'rgba(240,180,60,0.16)', warningText: '#f0c05c'
+    },
+    light: {
+      base: '#fffaf6', surface: '#fbf2ea', elevated: '#ffffff', overlay: '#f6e9dd',
+      border: '#ecdbc9', text: '#241811', textSecondary: '#5f4a3b', textMuted: '#8c7663',
+      brand: '#c8471f', onBrand: '#ffffff', brandWash: 'rgba(200,71,31,0.10)', brandText: '#b03e1a',
+      success: '#15803d', error: '#c0392b', warningWash: 'rgba(180,120,10,0.12)', warningText: '#93650c'
+    }
+  },
+  violet: {
+    dark: {
+      base: '#0d0e14', surface: '#15161f', elevated: '#1e2029', overlay: '#272a35',
+      border: '#333646', text: '#f1f1f7', textSecondary: '#a7a9bd', textMuted: '#6f7188',
+      brand: '#8b7cf6', onBrand: '#150e33', brandWash: 'rgba(139,124,246,0.16)', brandText: '#b3a8fa',
+      success: '#4ade80', error: '#f87171', warningWash: 'rgba(245,158,11,0.16)', warningText: '#fbbf24'
+    },
+    light: {
+      base: '#ffffff', surface: '#f7f7fc', elevated: '#ffffff', overlay: '#eeeef7',
+      border: '#e2e2f0', text: '#15161f', textSecondary: '#54566c', textMuted: '#86889e',
+      brand: '#6d4fea', onBrand: '#ffffff', brandWash: 'rgba(109,79,234,0.10)', brandText: '#5c3fd6',
+      success: '#16a34a', error: '#dc2626', warningWash: 'rgba(217,119,6,0.12)', warningText: '#b45309'
+    }
+  }
+};
+
+function applyMockup(key, mode) {
+  const p = PALETTES[key][mode];
+  const el = document.querySelector(`[data-mockup="${key}"]`);
+  el.dataset.mode = mode;
+  el.style.setProperty('--m-base', p.base);
+  el.style.setProperty('--m-surface', p.surface);
+  el.style.setProperty('--m-elevated', p.elevated);
+  el.style.setProperty('--m-overlay', p.overlay);
+  el.style.setProperty('--m-border', p.border);
+  el.style.setProperty('--m-text', p.text);
+  el.style.setProperty('--m-text-secondary', p.textSecondary);
+  el.style.setProperty('--m-text-muted', p.textMuted);
+  el.style.setProperty('--m-brand', p.brand);
+  el.style.setProperty('--m-on-brand', p.onBrand);
+  el.style.setProperty('--m-brand-wash', p.brandWash);
+  el.style.setProperty('--m-brand-text', p.brandText);
+  el.style.setProperty('--m-success', p.success);
+  el.style.setProperty('--m-error', p.error);
+  el.style.setProperty('--m-warning-wash', p.warningWash);
+  el.style.setProperty('--m-warning-text', p.warningText);
+
+  el.innerHTML = `
+    <div class="sidebar">
+      <div class="brand-mark"><span class="brand-dot"></span>Ask Sous</div>
+      <div class="switcher">
+        <span>🍜 Golden Wok<div class="sub">Asian · Downtown</div></span>
+        <span>⌄</span>
+      </div>
+      <div class="nav-item active">💬 Chat</div>
+      <div class="nav-item">📣 Campaigns</div>
+      <div class="nav-item">📊 Dashboard</div>
+    </div>
+    <div class="main">
+      <div class="msg user">Why was revenue down this week?</div>
+      <div class="msg agent">
+        Tuesday revenue was $1,240 vs a 4-week average of $1,890 — a 34% drop, mostly dinner service.
+        <div class="cite">🔧 revenue_summary · 2 tool calls</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="k">This week</div>
+          <div class="v">$8,420</div>
+          <div class="d down">▼ 12% vs last wk</div>
+        </div>
+        <div class="stat-card">
+          <div class="k">Top item</div>
+          <div class="v">Pad See Ew</div>
+          <div class="d up">▲ 18% velocity</div>
+        </div>
+      </div>
+      <div><span class="tag warn">⚠ Tuesday consistently slow</span></div>
+      <div class="input-bar"><span>Ask about revenue, items, campaigns…</span><button>Send</button></div>
+    </div>
+  `;
+}
+
+function renderSwatches(key) {
+  const dark = PALETTES[key].dark;
+  const entries = [
+    ['Base', dark.base], ['Surface', dark.surface], ['Elevated', dark.elevated],
+    ['Border', dark.border], ['Brand', dark.brand], ['Success', dark.success],
+    ['Error', dark.error]
+  ];
+  const row = document.querySelector(`[data-swatches="${key}"]`);
+  row.innerHTML = entries.map(([label, color]) => `
+    <div class="swatch">
+      <div class="chip" style="background:${color}"></div>
+      <div class="label"><b>${label}</b>${color}</div>
+    </div>
+  `).join('');
+}
+
+Object.keys(PALETTES).forEach(key => {
+  renderSwatches(key);
+  applyMockup(key, 'dark');
+});
+
+document.querySelectorAll('.mode-toggle').forEach(toggle => {
+  const key = toggle.dataset.toggle;
+  toggle.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      toggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyMockup(key, btn.dataset.mode);
+    });
+  });
+});
+
+document.querySelectorAll('.select-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.select-btn').forEach(b => {
+      b.classList.remove('selected');
+      b.textContent = b.dataset.select;
+    });
+    btn.classList.add('selected');
+    btn.textContent = btn.dataset.select;
+  });
+});
+</script>

@@ -1,0 +1,240 @@
+<meta charset="utf-8">
+<title>Ask Sous — Typography Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --font-fallback: system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', var(--font-fallback);
+    background: #150f0b;
+    color: #f8ede4;
+    padding: 40px 24px 120px;
+  }
+  .page-header { max-width: 1100px; margin: 0 auto 48px; }
+  .page-header h1 { font-size: 28px; margin: 0 0 8px; font-family: 'Inter', sans-serif; }
+  .page-header p { color: #cbb6a5; max-width: 72ch; line-height: 1.6; margin: 0; }
+
+  .option {
+    max-width: 1100px;
+    margin: 0 auto 56px;
+    border: 1px solid #3a2d22;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #1d1611;
+  }
+  .option-head {
+    padding: 22px 28px;
+    border-bottom: 1px solid #3a2d22;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .option-head h2 { margin: 0 0 6px; font-size: 19px; }
+  .option-head .desc { color: #cbb6a5; font-size: 13.5px; max-width: 62ch; line-height: 1.55; }
+  .option-head .fonts { font-size: 11.5px; color: #8f7a67; margin-top: 8px; font-family: 'JetBrains Mono', monospace; }
+
+  .body-content { padding: 28px; }
+
+  .scale-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 90px;
+    gap: 16px;
+    align-items: baseline;
+    padding: 14px 0;
+    border-bottom: 1px solid #261d17;
+  }
+  .scale-row:last-child { border-bottom: none; }
+  .scale-row .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: #ec6a3e;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .scale-row .sample { color: #f8ede4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scale-row .meta { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #8f7a67; text-align: right; }
+
+  .content-demo {
+    margin-top: 26px;
+    background: #150f0b;
+    border: 1px solid #3a2d22;
+    border-radius: 12px;
+    padding: 24px 26px;
+  }
+  .content-demo .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #ec6a3e;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .content-demo h3 { margin: 0 0 10px; font-size: 26px; line-height: 1.2; }
+  .content-demo .lede { color: #cbb6a5; font-size: 14.5px; line-height: 1.65; margin: 0 0 18px; max-width: 62ch; }
+  .content-demo .stat-line { display: flex; gap: 28px; flex-wrap: wrap; }
+  .content-demo .stat-line div span.k { display: block; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #8f7a67; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+  .content-demo .stat-line div span.v { font-size: 20px; font-weight: 700; }
+
+  .weights-row { display: flex; gap: 24px; margin-top: 22px; flex-wrap: wrap; }
+  .weights-row .w { font-size: 15px; }
+  .weights-row .w .lbl { display: block; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8f7a67; margin-bottom: 4px; }
+
+  .select-btn {
+    display: block;
+    margin: 22px 28px 28px;
+    padding: 12px 20px;
+    border-radius: 9px;
+    border: 1px solid #3a2d22;
+    background: #150f0b;
+    color: #f8ede4;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    width: calc(100% - 56px);
+    transition: all 0.15s ease;
+  }
+  .select-btn:hover { border-color: #ec6a3e; }
+  .select-btn.selected { background: #2a1a10; border-color: #ec6a3e; color: #f4936c; }
+  .select-btn.selected::before { content: "✓ Selected — "; }
+
+  footer { max-width: 1100px; margin: 40px auto 0; color: #6a5d51; font-size: 12.5px; text-align: center; }
+</style>
+
+<div class="page-header">
+  <h1>Ask Sous — Typography Directions</h1>
+  <p>Brand colour is locked (Warm Ember). Three font pairings, shown against the actual palette with a live type scale and a realistic content block — an insights answer with stats, the kind of thing the chat UI renders constantly.</p>
+</div>
+
+<!-- OPTION A: Inter + Inter -->
+<div class="option" data-option="inter">
+  <div class="option-head">
+    <div>
+      <h2>Option A — Inter, all business</h2>
+      <div class="desc">Single-family: Inter for everything, JetBrains Mono for numbers/citations. Neutral, extremely legible at small sizes, zero personality risk. The safest choice for a data-dense chat UI.</div>
+      <div class="fonts">UI/Display: Inter · Mono: JetBrains Mono</div>
+    </div>
+  </div>
+  <div class="body-content" style="font-family:'Inter', sans-serif;">
+    <div class="scale-row"><span class="tag">Display</span><span class="sample" style="font-size:32px;font-weight:700;letter-spacing:-0.02em;">Tuesday nights are your quiet spot</span><span class="meta">32/40 · 700</span></div>
+    <div class="scale-row"><span class="tag">Title</span><span class="sample" style="font-size:22px;font-weight:700;letter-spacing:-0.01em;">Revenue summary — this week</span><span class="meta">22/28 · 700</span></div>
+    <div class="scale-row"><span class="tag">Heading</span><span class="sample" style="font-size:17px;font-weight:600;">Top-performing items</span><span class="meta">17/24 · 600</span></div>
+    <div class="scale-row"><span class="tag">Body</span><span class="sample" style="font-size:14px;font-weight:400;">Tuesday revenue was $1,240 vs a 4-week average of $1,890.</span><span class="meta">14/22 · 400</span></div>
+    <div class="scale-row"><span class="tag">Label</span><span class="sample" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">This Week</span><span class="meta">12/16 · 600</span></div>
+    <div class="scale-row"><span class="tag">Caption</span><span class="sample" style="font-size:11px;font-weight:500;color:#8f7a67;">revenue_summary · 2 tool calls</span><span class="meta">11/16 · 500</span></div>
+
+    <div class="content-demo">
+      <div class="eyebrow">Insights · Golden Wok</div>
+      <h3 style="font-weight:700;letter-spacing:-0.01em;">Why was revenue down this week?</h3>
+      <p class="lede">Tuesday revenue was $1,240 against a 4-week average of $1,890 — a 34% drop, concentrated in dinner service (5–9pm). Lunch traffic was flat.</p>
+      <div class="stat-line">
+        <div><span class="k">This week</span><span class="v">$8,420</span></div>
+        <div><span class="k">Top item</span><span class="v">Pad See Ew</span></div>
+        <div><span class="k">Avg ticket</span><span class="v">$34.10</span></div>
+      </div>
+    </div>
+    <div class="weights-row">
+      <div class="w"><span class="lbl">400</span>Regular weight body text</div>
+      <div class="w"><span class="lbl">500</span>Medium weight body text</div>
+      <div class="w"><span class="lbl">600</span>Semibold for emphasis</div>
+      <div class="w"><span class="lbl">700</span>Bold for headings</div>
+      <div class="w" style="font-family:'JetBrains Mono',monospace;"><span class="lbl">MONO</span>$8,420.00</div>
+    </div>
+  </div>
+  <button class="select-btn" data-select="Option A — Inter, all business">Select this option</button>
+</div>
+
+<!-- OPTION B: Fraunces + Inter -->
+<div class="option" data-option="fraunces">
+  <div class="option-head">
+    <div>
+      <h2>Option B — Fraunces display + Inter UI</h2>
+      <div class="desc">Fraunces is a warm, characterful serif with soft, organic curves — used only for display/headings, giving the product a hospitality feel without sacrificing legibility, since all dense UI text (chat, labels, data) stays in Inter.</div>
+      <div class="fonts">Display: Fraunces · UI/Body: Inter · Mono: JetBrains Mono</div>
+    </div>
+  </div>
+  <div class="body-content" style="font-family:'Inter', sans-serif;">
+    <div class="scale-row"><span class="tag">Display</span><span class="sample" style="font-family:'Fraunces',serif;font-size:34px;font-weight:600;">Tuesday nights are your quiet spot</span><span class="meta">34/40 · 600</span></div>
+    <div class="scale-row"><span class="tag">Title</span><span class="sample" style="font-family:'Fraunces',serif;font-size:23px;font-weight:600;">Revenue summary — this week</span><span class="meta">23/30 · 600</span></div>
+    <div class="scale-row"><span class="tag">Heading</span><span class="sample" style="font-size:17px;font-weight:600;">Top-performing items</span><span class="meta">17/24 · 600 (Inter)</span></div>
+    <div class="scale-row"><span class="tag">Body</span><span class="sample" style="font-size:14px;font-weight:400;">Tuesday revenue was $1,240 vs a 4-week average of $1,890.</span><span class="meta">14/22 · 400 (Inter)</span></div>
+    <div class="scale-row"><span class="tag">Label</span><span class="sample" style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">This Week</span><span class="meta">12/16 · 600 (Inter)</span></div>
+    <div class="scale-row"><span class="tag">Caption</span><span class="sample" style="font-size:11px;font-weight:500;color:#8f7a67;">revenue_summary · 2 tool calls</span><span class="meta">11/16 · 500 (Inter)</span></div>
+
+    <div class="content-demo">
+      <div class="eyebrow">Insights · Golden Wok</div>
+      <h3 style="font-family:'Fraunces',serif;font-weight:600;">Why was revenue down this week?</h3>
+      <p class="lede">Tuesday revenue was $1,240 against a 4-week average of $1,890 — a 34% drop, concentrated in dinner service (5–9pm). Lunch traffic was flat.</p>
+      <div class="stat-line">
+        <div><span class="k">This week</span><span class="v">$8,420</span></div>
+        <div><span class="k">Top item</span><span class="v">Pad See Ew</span></div>
+        <div><span class="k">Avg ticket</span><span class="v">$34.10</span></div>
+      </div>
+    </div>
+    <div class="weights-row">
+      <div class="w" style="font-family:'Fraunces',serif;"><span class="lbl">FRAUNCES 400</span>Regular display text</div>
+      <div class="w" style="font-family:'Fraunces',serif;font-weight:600;"><span class="lbl">FRAUNCES 600</span>Semibold display text</div>
+      <div class="w"><span class="lbl">INTER 400</span>Regular body text</div>
+      <div class="w"><span class="lbl">INTER 700</span>Bold UI text</div>
+      <div class="w" style="font-family:'JetBrains Mono',monospace;"><span class="lbl">MONO</span>$8,420.00</div>
+    </div>
+  </div>
+  <button class="select-btn" data-select="Option B — Fraunces display + Inter UI">Select this option</button>
+</div>
+
+<!-- OPTION C: Manrope + Manrope -->
+<div class="option" data-option="manrope">
+  <div class="option-head">
+    <div>
+      <h2>Option C — Manrope, all business</h2>
+      <div class="desc">Manrope is geometric like Inter but rounder and slightly warmer in its letterforms — a middle ground between Option A's neutrality and Option B's character, without switching families. Mono: IBM Plex Mono, which pairs well with Manrope's roundness.</div>
+      <div class="fonts">UI/Display: Manrope · Mono: IBM Plex Mono</div>
+    </div>
+  </div>
+  <div class="body-content" style="font-family:'Manrope', sans-serif;">
+    <div class="scale-row"><span class="tag">Display</span><span class="sample" style="font-size:32px;font-weight:800;letter-spacing:-0.02em;">Tuesday nights are your quiet spot</span><span class="meta">32/40 · 800</span></div>
+    <div class="scale-row"><span class="tag">Title</span><span class="sample" style="font-size:22px;font-weight:700;">Revenue summary — this week</span><span class="meta">22/28 · 700</span></div>
+    <div class="scale-row"><span class="tag">Heading</span><span class="sample" style="font-size:17px;font-weight:700;">Top-performing items</span><span class="meta">17/24 · 700</span></div>
+    <div class="scale-row"><span class="tag">Body</span><span class="sample" style="font-size:14px;font-weight:500;">Tuesday revenue was $1,240 vs a 4-week average of $1,890.</span><span class="meta">14/22 · 500</span></div>
+    <div class="scale-row"><span class="tag">Label</span><span class="sample" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">This Week</span><span class="meta">12/16 · 700</span></div>
+    <div class="scale-row"><span class="tag">Caption</span><span class="sample" style="font-size:11px;font-weight:600;color:#8f7a67;">revenue_summary · 2 tool calls</span><span class="meta">11/16 · 600</span></div>
+
+    <div class="content-demo">
+      <div class="eyebrow">Insights · Golden Wok</div>
+      <h3 style="font-weight:800;letter-spacing:-0.01em;">Why was revenue down this week?</h3>
+      <p class="lede">Tuesday revenue was $1,240 against a 4-week average of $1,890 — a 34% drop, concentrated in dinner service (5–9pm). Lunch traffic was flat.</p>
+      <div class="stat-line">
+        <div><span class="k">This week</span><span class="v">$8,420</span></div>
+        <div><span class="k">Top item</span><span class="v">Pad See Ew</span></div>
+        <div><span class="k">Avg ticket</span><span class="v">$34.10</span></div>
+      </div>
+    </div>
+    <div class="weights-row">
+      <div class="w"><span class="lbl">500</span>Medium weight body text</div>
+      <div class="w"><span class="lbl">700</span>Bold weight text</div>
+      <div class="w"><span class="lbl">800</span>Extrabold for display</div>
+      <div class="w" style="font-family:'IBM Plex Mono',monospace;"><span class="lbl">MONO</span>$8,420.00</div>
+    </div>
+  </div>
+  <button class="select-btn" data-select="Option C — Manrope, all business">Select this option</button>
+</div>
+
+<footer>Ask Sous design system — showcase file, not shipped UI. Brand colour locked: Warm Ember.</footer>
+
+<script>
+document.querySelectorAll('.select-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.select-btn').forEach(b => {
+      b.classList.remove('selected');
+      b.textContent = b.dataset.select;
+    });
+    btn.classList.add('selected');
+    btn.textContent = btn.dataset.select;
+  });
+});
+</script>

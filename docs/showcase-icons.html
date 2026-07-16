@@ -1,0 +1,251 @@
+<meta charset="utf-8">
+<title>Ask Sous — Icon Set Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #150f0b;
+    color: #f8ede4;
+    padding: 40px 24px 120px;
+  }
+  .page-header { max-width: 1100px; margin: 0 auto 48px; }
+  .page-header h1 { font-family: 'Fraunces', serif; font-size: 30px; margin: 0 0 8px; font-weight: 600; }
+  .page-header p { color: #cbb6a5; max-width: 72ch; line-height: 1.6; margin: 0; }
+
+  .option {
+    max-width: 1100px;
+    margin: 0 auto 56px;
+    border: 1px solid #3a2d22;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #1d1611;
+  }
+  .option-head {
+    padding: 22px 28px;
+    border-bottom: 1px solid #3a2d22;
+  }
+  .option-head h2 { margin: 0 0 6px; font-size: 19px; }
+  .option-head .desc { color: #cbb6a5; font-size: 13.5px; max-width: 68ch; line-height: 1.55; }
+  .option-head .meta { font-size: 11.5px; color: #8f7a67; margin-top: 8px; font-family: 'JetBrains Mono', monospace; }
+
+  .body-content { padding: 26px 28px; }
+  .section-label { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #ec6a3e; text-transform: uppercase; letter-spacing: 0.07em; margin: 0 0 12px; }
+
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 10px;
+    margin-bottom: 26px;
+  }
+  .icon-cell {
+    background: #150f0b;
+    border: 1px solid #3a2d22;
+    border-radius: 10px;
+    padding: 14px 8px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .icon-cell i, .icon-cell svg { color: #f4936c; width: 22px; height: 22px; font-size: 22px; }
+  .icon-cell .name { font-size: 9.5px; color: #8f7a67; font-family: 'JetBrains Mono', monospace; text-align: center; line-height: 1.3; }
+
+  .size-row { display: flex; gap: 32px; align-items: center; margin-bottom: 26px; padding: 16px; background: #150f0b; border: 1px solid #3a2d22; border-radius: 10px; }
+  .size-row .item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .size-row .item .lbl { font-size: 10px; color: #8f7a67; font-family: 'JetBrains Mono', monospace; }
+
+  .context-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .ctx-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: #ec6a3e; color: #1c0c04; border: none; border-radius: 8px;
+    padding: 9px 14px; font-size: 13px; font-weight: 700; font-family: 'Inter', sans-serif;
+  }
+  .ctx-nav {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(236,106,62,0.16); color: #f4936c; border-radius: 8px;
+    padding: 9px 14px; font-size: 13px; font-weight: 600;
+  }
+  .ctx-stat {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #150f0b; border: 1px solid #3a2d22; border-radius: 8px;
+    padding: 9px 14px; font-size: 12.5px; color: #65c179; font-weight: 600;
+  }
+  .ctx-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(240,180,60,0.16); color: #f0c05c; border-radius: 999px;
+    padding: 6px 12px; font-size: 12px; font-weight: 600;
+  }
+  .ctx-row i, .ctx-row svg {}
+
+  .select-btn {
+    display: block;
+    margin: 4px 28px 28px;
+    padding: 12px 20px;
+    border-radius: 9px;
+    border: 1px solid #3a2d22;
+    background: #150f0b;
+    color: #f8ede4;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    width: calc(100% - 56px);
+    transition: all 0.15s ease;
+  }
+  .select-btn:hover { border-color: #ec6a3e; }
+  .select-btn.selected { background: #2a1a10; border-color: #ec6a3e; color: #f4936c; }
+  .select-btn.selected::before { content: "✓ Selected — "; }
+
+  footer { max-width: 1100px; margin: 40px auto 0; color: #6a5d51; font-size: 12.5px; text-align: center; }
+</style>
+
+<div class="page-header">
+  <h1>Ask Sous — Icon Set Directions</h1>
+  <p>Icons drawn from what the product actually needs: chat, campaigns, dashboard, tool-call/citation, trend up/down, restaurant switcher, regenerate. Shown at three sizes and in real UI contexts (button, nav item, stat trend, tag).</p>
+</div>
+
+<!-- OPTION A: Lucide -->
+<div class="option" data-option="lucide">
+  <div class="option-head">
+    <h2>Option A — Lucide</h2>
+    <div class="desc">Outlined, 2px stroke, consistent corner radius. The default icon set for shadcn/ui — zero extra integration work since the component library already expects it.</div>
+    <div class="meta">Style: outline · Stroke: 2px · Load: lucide UMD script</div>
+  </div>
+  <div class="body-content">
+    <div class="section-label">Core icon set</div>
+    <div class="icon-grid" data-lucide-grid></div>
+    <div class="section-label">Sizes</div>
+    <div class="size-row">
+      <div class="item"><i data-lucide="megaphone" style="width:16px;height:16px;color:#f4936c;"></i><span class="lbl">16px</span></div>
+      <div class="item"><i data-lucide="megaphone" style="width:20px;height:20px;color:#f4936c;"></i><span class="lbl">20px</span></div>
+      <div class="item"><i data-lucide="megaphone" style="width:24px;height:24px;color:#f4936c;"></i><span class="lbl">24px</span></div>
+    </div>
+    <div class="section-label">In context</div>
+    <div class="context-row">
+      <span class="ctx-btn"><i data-lucide="send" style="width:15px;height:15px;"></i>Send</span>
+      <span class="ctx-nav"><i data-lucide="megaphone" style="width:15px;height:15px;"></i>Campaigns</span>
+      <span class="ctx-stat"><i data-lucide="trending-up" style="width:14px;height:14px;"></i>18% velocity</span>
+      <span class="ctx-tag"><i data-lucide="alert-triangle" style="width:13px;height:13px;"></i>Tuesday slow</span>
+      <span class="ctx-btn" style="background:#150f0b;color:#f8ede4;border:1px solid #3a2d22;"><i data-lucide="refresh-cw" style="width:15px;height:15px;"></i>Regenerate</span>
+    </div>
+  </div>
+  <button class="select-btn" data-select="Option A — Lucide">Select this option</button>
+</div>
+
+<!-- OPTION B: Phosphor -->
+<div class="option" data-option="phosphor">
+  <div class="option-head">
+    <h2>Option B — Phosphor (Regular)</h2>
+    <div class="desc">Slightly rounder terminals and a touch warmer than Lucide — fits the Warm Ember palette well. Offers a Duotone weight for special moments (e.g. an empty state or onboarding) if wanted later.</div>
+    <div class="meta">Style: outline (regular weight) · Load: Phosphor web font CDN</div>
+  </div>
+  <div class="body-content">
+    <div class="section-label">Core icon set</div>
+    <div class="icon-grid" data-phosphor-grid></div>
+    <div class="section-label">Sizes</div>
+    <div class="size-row">
+      <div class="item"><i class="ph ph-megaphone" style="font-size:16px;"></i><span class="lbl">16px</span></div>
+      <div class="item"><i class="ph ph-megaphone" style="font-size:20px;"></i><span class="lbl">20px</span></div>
+      <div class="item"><i class="ph ph-megaphone" style="font-size:24px;"></i><span class="lbl">24px</span></div>
+    </div>
+    <div class="section-label">In context</div>
+    <div class="context-row">
+      <span class="ctx-btn"><i class="ph ph-paper-plane-right" style="font-size:15px;"></i>Send</span>
+      <span class="ctx-nav"><i class="ph ph-megaphone" style="font-size:15px;"></i>Campaigns</span>
+      <span class="ctx-stat"><i class="ph ph-trend-up" style="font-size:14px;"></i>18% velocity</span>
+      <span class="ctx-tag"><i class="ph ph-warning" style="font-size:13px;"></i>Tuesday slow</span>
+      <span class="ctx-btn" style="background:#150f0b;color:#f8ede4;border:1px solid #3a2d22;"><i class="ph ph-arrow-clockwise" style="font-size:15px;"></i>Regenerate</span>
+    </div>
+  </div>
+  <button class="select-btn" data-select="Option B — Phosphor (Regular)">Select this option</button>
+</div>
+
+<!-- OPTION C: Tabler -->
+<div class="option" data-option="tabler">
+  <div class="option-head">
+    <h2>Option C — Tabler Icons</h2>
+    <div class="desc">Crisp outline style, slightly bolder default stroke than Lucide, huge library (5000+). A safe, popular alternative if a specific icon Lucide lacks is ever needed.</div>
+    <div class="meta">Style: outline · Load: Tabler Icons web font CDN</div>
+  </div>
+  <div class="body-content">
+    <div class="section-label">Core icon set</div>
+    <div class="icon-grid" data-tabler-grid></div>
+    <div class="section-label">Sizes</div>
+    <div class="size-row">
+      <div class="item"><i class="ti ti-speakerphone" style="font-size:16px;"></i><span class="lbl">16px</span></div>
+      <div class="item"><i class="ti ti-speakerphone" style="font-size:20px;"></i><span class="lbl">20px</span></div>
+      <div class="item"><i class="ti ti-speakerphone" style="font-size:24px;"></i><span class="lbl">24px</span></div>
+    </div>
+    <div class="section-label">In context</div>
+    <div class="context-row">
+      <span class="ctx-btn"><i class="ti ti-send" style="font-size:15px;"></i>Send</span>
+      <span class="ctx-nav"><i class="ti ti-speakerphone" style="font-size:15px;"></i>Campaigns</span>
+      <span class="ctx-stat"><i class="ti ti-trending-up" style="font-size:14px;"></i>18% velocity</span>
+      <span class="ctx-tag"><i class="ti ti-alert-triangle" style="font-size:13px;"></i>Tuesday slow</span>
+      <span class="ctx-btn" style="background:#150f0b;color:#f8ede4;border:1px solid #3a2d22;"><i class="ti ti-refresh" style="font-size:15px;"></i>Regenerate</span>
+    </div>
+  </div>
+  <button class="select-btn" data-select="Option C — Tabler Icons">Select this option</button>
+</div>
+
+<footer>Ask Sous design system — showcase file, not shipped UI. Palette: Warm Ember · Type: Fraunces + Inter.</footer>
+
+<script>
+const ICONS = [
+  ['message-circle','ph-chat-circle','ti-message-circle','Chat'],
+  ['megaphone','ph-megaphone','ti-speakerphone','Campaigns'],
+  ['bar-chart-3','ph-chart-bar','ti-chart-bar','Dashboard'],
+  ['send','ph-paper-plane-right','ti-send','Send'],
+  ['chevron-down','ph-caret-down','ti-chevron-down','Chevron'],
+  ['wrench','ph-wrench','ti-tool','Tool call'],
+  ['trending-up','ph-trend-up','ti-trending-up','Trend up'],
+  ['trending-down','ph-trend-down','ti-trending-down','Trend down'],
+  ['alert-triangle','ph-warning','ti-alert-triangle','Warning'],
+  ['check','ph-check','ti-check','Check'],
+  ['store','ph-storefront','ti-building-store','Restaurant'],
+  ['clock','ph-clock','ti-clock','Time'],
+  ['calendar','ph-calendar','ti-calendar','Date range'],
+  ['search','ph-magnifying-glass','ti-search','Search'],
+  ['settings','ph-gear','ti-settings','Settings'],
+  ['x','ph-x','ti-x','Close'],
+  ['plus','ph-plus','ti-plus','New'],
+  ['refresh-cw','ph-arrow-clockwise','ti-refresh','Regenerate'],
+  ['copy','ph-copy','ti-copy','Copy'],
+  ['external-link','ph-arrow-square-out','ti-external-link','External'],
+  ['user','ph-user','ti-user','Owner'],
+  ['star','ph-star','ti-star','Review rating'],
+  ['tag','ph-tag','ti-tag','Tag'],
+  ['dollar-sign','ph-currency-dollar','ti-currency-dollar','Revenue'],
+  ['sparkles','ph-sparkle','ti-sparkles','AI generated']
+];
+
+const lucideGrid = document.querySelector('[data-lucide-grid]');
+const phosphorGrid = document.querySelector('[data-phosphor-grid]');
+const tablerGrid = document.querySelector('[data-tabler-grid]');
+
+ICONS.forEach(([lucide, phosphor, tabler, label]) => {
+  lucideGrid.innerHTML += `<div class="icon-cell"><i data-lucide="${lucide}"></i><span class="name">${label}</span></div>`;
+  phosphorGrid.innerHTML += `<div class="icon-cell"><i class="ph ${phosphor}"></i><span class="name">${label}</span></div>`;
+  tablerGrid.innerHTML += `<div class="icon-cell"><i class="ti ${tabler}"></i><span class="name">${label}</span></div>`;
+});
+
+if (window.lucide) lucide.createIcons();
+
+document.querySelectorAll('.select-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.select-btn').forEach(b => {
+      b.classList.remove('selected');
+      b.textContent = b.dataset.select;
+    });
+    btn.classList.add('selected');
+    btn.textContent = btn.dataset.select;
+  });
+});
+</script>

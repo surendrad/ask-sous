@@ -1,0 +1,173 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* We theme via a `data-theme` attribute on <html> (see src/lib/theme.ts),
+   not shadcn's default `.dark` class toggle, since design-guidelines.md §13
+   specifies attribute-scoped tokens. This bridges shadcn's `dark:` variant
+   (used inside imported components) to that same attribute. */
+@custom-variant dark (&:is([data-theme="dark"] *));
+
+/* Design tokens — see docs/definition/design-guidelines.md for the full
+   specification. Every colour, spacing, radius, and shadow value used in
+   the app must come from one of these tokens, never a raw value. */
+
+@theme {
+  --font-display: "Fraunces", serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 999px;
+
+  --shadow-e1: var(--shadow-e1-value);
+  --shadow-e2: var(--shadow-e2-value);
+  --shadow-e3: var(--shadow-e3-value);
+}
+
+/* Warm Ember — dark (default/primary) */
+[data-theme="dark"] {
+  --base: #150f0b;
+  --surface: #1d1611;
+  --elevated: #261d17;
+  --overlay: #2f251d;
+  --border: #3a2d22;
+  --border-strong: #4a3a2c;
+  --text: #f8ede4;
+  --text-secondary: #cbb6a5;
+  --text-muted: #8f7a67;
+  --brand: #ec6a3e;
+  --on-brand: #1c0c04;
+  --brand-wash: rgba(236, 106, 62, 0.16);
+  --brand-text: #f4936c;
+  --success: #65c179;
+  --success-text: #8fd6a0;
+  --success-wash: rgba(101, 193, 121, 0.16);
+  --error: #f0665f;
+  --error-text: #f5928c;
+  --error-wash: rgba(240, 102, 95, 0.16);
+  --warning-text: #f0c05c;
+  --warning-wash: rgba(240, 180, 60, 0.16);
+  --info-text: #7fb0fb;
+  --info-wash: rgba(110, 168, 254, 0.16);
+
+  --shadow-e1-value: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-e2-value: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-e3-value: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Warm Ember — light */
+[data-theme="light"] {
+  --base: #fffaf6;
+  --surface: #fbf2ea;
+  --elevated: #ffffff;
+  --overlay: #f6e9dd;
+  --border: #ecdbc9;
+  --border-strong: #ddc4a8;
+  --text: #241811;
+  --text-secondary: #5f4a3b;
+  --text-muted: #8c7663;
+  --brand: #c8471f;
+  --on-brand: #ffffff;
+  --brand-wash: rgba(200, 71, 31, 0.1);
+  --brand-text: #b03e1a;
+  --success: #15803d;
+  --success-text: #15803d;
+  --success-wash: rgba(21, 128, 61, 0.1);
+  --error: #c0392b;
+  --error-text: #c0392b;
+  --error-wash: rgba(192, 57, 43, 0.1);
+  --warning-text: #93650c;
+  --warning-wash: rgba(180, 120, 10, 0.12);
+  --info-text: #1d4ed8;
+  --info-wash: rgba(29, 78, 216, 0.1);
+
+  --shadow-e1-value:
+    0 1px 2px rgba(36, 24, 17, 0.05), 0 1px 3px rgba(36, 24, 17, 0.04);
+  --shadow-e2-value: 0 4px 16px rgba(36, 24, 17, 0.08);
+  --shadow-e3-value: 0 20px 60px rgba(36, 24, 17, 0.18);
+}
+
+/* Map both our own semantic names AND shadcn's expected alias names
+   (background/foreground/card/primary/etc., used by imported ui/
+   components) onto the same Warm Ember tokens above — one palette, two
+   naming conventions, no parallel oklch palette. */
+@theme inline {
+  --color-base: var(--base);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-overlay: var(--overlay);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-brand: var(--brand);
+  --color-on-brand: var(--on-brand);
+  --color-brand-wash: var(--brand-wash);
+  --color-brand-text: var(--brand-text);
+  --color-success: var(--success);
+  --color-success-text: var(--success-text);
+  --color-success-wash: var(--success-wash);
+  --color-error: var(--error);
+  --color-error-text: var(--error-text);
+  --color-error-wash: var(--error-wash);
+  --color-warning-text: var(--warning-text);
+  --color-warning-wash: var(--warning-wash);
+  --color-info-text: var(--info-text);
+  --color-info-wash: var(--info-wash);
+
+  --color-background: var(--base);
+  --color-foreground: var(--text);
+  --color-card: var(--elevated);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--elevated);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--brand);
+  --color-primary-foreground: var(--on-brand);
+  --color-secondary: var(--overlay);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--overlay);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--brand-wash);
+  --color-accent-foreground: var(--brand-text);
+  --color-destructive: var(--error);
+  --color-input: var(--border-strong);
+  --color-ring: var(--brand);
+
+  --color-sidebar: var(--surface);
+  --color-sidebar-foreground: var(--text);
+  --color-sidebar-primary: var(--brand);
+  --color-sidebar-primary-foreground: var(--on-brand);
+  --color-sidebar-accent: var(--brand-wash);
+  --color-sidebar-accent-foreground: var(--brand-text);
+  --color-sidebar-border: var(--border);
+  --color-sidebar-ring: var(--brand);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+  }
+  html {
+    @apply font-sans;
+  }
+}
