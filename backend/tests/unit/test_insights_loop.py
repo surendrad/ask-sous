@@ -17,7 +17,7 @@ async def test_single_round_returns_final_answer_with_no_tool_calls():
     mock_client.generate_turn = AsyncMock(return_value=FinalAnswer(text="Hello there."))
 
     with patch("app.agent.insights.GeminiClient", return_value=mock_client):
-        result = await answer_question(_RID, "hi")
+        result = await answer_question([_RID], "hi")
 
     assert result.answer == "Hello there."
     assert result.tool_calls == []
@@ -66,7 +66,7 @@ async def test_two_round_invokes_tool_with_parsed_args_and_feeds_result_back():
             },
         ),
     ):
-        result = await answer_question(_RID, "what was my revenue?")
+        result = await answer_question([_RID], "what was my revenue?")
 
     assert result.answer == "Revenue was $500."
     assert len(result.tool_calls) == 1
@@ -90,7 +90,7 @@ async def test_tool_error_is_caught_and_fed_back_as_error_response():
     )
 
     with patch("app.agent.insights.GeminiClient", return_value=mock_client):
-        result = await answer_question(_RID, "what was my revenue?")
+        result = await answer_question([_RID], "what was my revenue?")
 
     assert result.answer == "Sorry, I couldn't process that."
     assert len(result.tool_calls) == 1
@@ -111,7 +111,7 @@ async def test_round_cap_exceeded_raises_agent_incomplete():
 
     with patch("app.agent.insights.GeminiClient", return_value=mock_client):
         with pytest.raises(AgentIncompleteError):
-            await answer_question(_RID, "what was my revenue?")
+            await answer_question([_RID], "what was my revenue?")
 
 
 async def test_turn_needing_four_rounds_escalates_to_pro_model():
@@ -147,7 +147,7 @@ async def test_turn_needing_four_rounds_escalates_to_pro_model():
             },
         ),
     ):
-        result = await answer_question(_RID, "what was my revenue?")
+        result = await answer_question([_RID], "what was my revenue?")
 
     assert result.answer == "Deep answer."
     assert result.model == PRO_MODEL
@@ -160,7 +160,7 @@ async def test_deeper_analysis_keyword_escalates_single_round_turn():
     mock_client.generate_turn = AsyncMock(return_value=FinalAnswer(text="Deep dive answer."))
 
     with patch("app.agent.insights.GeminiClient", return_value=mock_client):
-        result = await answer_question(_RID, "Can you give me a deep dive on last month?")
+        result = await answer_question([_RID], "Can you give me a deep dive on last month?")
 
     assert result.model == PRO_MODEL
     mock_client.generate_turn.assert_awaited_once_with(

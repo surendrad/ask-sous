@@ -13,7 +13,25 @@ _TOOL_NAMES = {
     "get_cohort_comparison",
     "run_readonly_query",
     "search_customer_reviews",
+    "compare_locations",
+    "list_campaigns",
+    "get_campaign_performance",
+    "get_upsell_metrics",
 }
+
+# Tools scoped to a single restaurant via `restaurant_id`, vs. a list via
+# `restaurant_ids` (compare_locations/get_upsell_metrics), vs. neither
+# (run_readonly_query has no restaurant scoping at all;
+# get_campaign_performance is scoped by campaign_id instead).
+_SINGLE_RESTAURANT_ID_TOOLS = {
+    "get_revenue_summary",
+    "compare_periods",
+    "get_item_velocity",
+    "get_cohort_comparison",
+    "search_customer_reviews",
+    "list_campaigns",
+}
+_MULTI_RESTAURANT_ID_TOOLS = {"compare_locations", "get_upsell_metrics"}
 
 
 def test_insights_tools_has_expected_names():
@@ -21,12 +39,26 @@ def test_insights_tools_has_expected_names():
     assert names == _TOOL_NAMES
 
 
-def test_all_tools_have_restaurant_id_string_param_except_raw_sql():
+def test_single_restaurant_tools_have_restaurant_id_string_param():
     for decl in INSIGHTS_TOOLS:
-        if decl.name == "run_readonly_query":
+        if decl.name not in _SINGLE_RESTAURANT_ID_TOOLS:
             continue
         assert "restaurant_id" in decl.parameters["properties"]
         assert decl.parameters["properties"]["restaurant_id"]["type"] == "STRING"
+
+
+def test_multi_restaurant_tools_have_restaurant_ids_array_param():
+    for decl in INSIGHTS_TOOLS:
+        if decl.name not in _MULTI_RESTAURANT_ID_TOOLS:
+            continue
+        assert "restaurant_ids" in decl.parameters["properties"]
+        assert decl.parameters["properties"]["restaurant_ids"]["type"] == "ARRAY"
+
+
+def test_get_campaign_performance_has_campaign_id_param():
+    decl = next(d for d in INSIGHTS_TOOLS if d.name == "get_campaign_performance")
+    assert "campaign_id" in decl.parameters["properties"]
+    assert decl.parameters["properties"]["campaign_id"]["type"] == "STRING"
 
 
 def test_search_customer_reviews_has_query_and_top_k():

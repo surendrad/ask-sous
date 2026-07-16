@@ -8,6 +8,7 @@ import { generateCampaign } from "@/lib/api";
 
 type CampaignsPanelProps = {
   restaurantId: string;
+  isMultipleSelected?: boolean;
 };
 
 /** Campaigns panel — the right panel in the split view per
@@ -15,8 +16,15 @@ type CampaignsPanelProps = {
  * stacked campaign-draft card with Regenerate + Copy actions. Unlike
  * ChatPage, /campaigns is a plain single-shot response, not streamed — see
  * docs/decisions/011 for why that's a deliberate non-goal for this
- * endpoint. */
-export default function CampaignsPanel({ restaurantId }: CampaignsPanelProps) {
+ * endpoint. Campaign generation stays single-location by design (Phase 8):
+ * brand voice and copy are generated per-restaurant, so when the sidebar
+ * has more than one location selected, this panel disables Generate and
+ * prompts the owner to narrow the selection rather than guessing which
+ * location to generate for. */
+export default function CampaignsPanel({
+  restaurantId,
+  isMultipleSelected = false,
+}: CampaignsPanelProps) {
   const [brief, setBrief] = useState("");
   const [submittedBrief, setSubmittedBrief] = useState<string | null>(null);
   const [draft, setDraft] = useState<CampaignResult | null>(null);
@@ -41,6 +49,7 @@ export default function CampaignsPanel({ restaurantId }: CampaignsPanelProps) {
   }
 
   async function handleGenerate() {
+    if (isMultipleSelected) return;
     const trimmed = brief.trim();
     if (!trimmed) return;
     setSubmittedBrief(trimmed);
@@ -80,10 +89,16 @@ export default function CampaignsPanel({ restaurantId }: CampaignsPanelProps) {
           value={brief}
           onChange={(e) => setBrief(e.target.value)}
         />
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading || isMultipleSelected}>
           Generate
         </Button>
       </form>
+
+      {isMultipleSelected && (
+        <StatusTag variant="warning">
+          Select exactly one location to generate a campaign.
+        </StatusTag>
+      )}
 
       {error && <StatusTag variant="error">{error}</StatusTag>}
 

@@ -44,7 +44,7 @@ async def test_single_round_streams_text_chunks_then_completes():
     )
 
     with patch("app.agent.insights.GeminiClient", return_value=mock_client):
-        events = [event async for event in answer_question_stream(_RID, "hi")]
+        events = [event async for event in answer_question_stream([_RID], "hi")]
 
     assert events[:2] == [TextChunk(text="Hello "), TextChunk(text="there.")]
     assert isinstance(events[-1], AgentTurnComplete)
@@ -89,7 +89,7 @@ async def test_tool_call_round_dispatches_tool_then_streams_final_answer():
             },
         ),
     ):
-        events = [event async for event in answer_question_stream(_RID, "what was my revenue?")]
+        events = [event async for event in answer_question_stream([_RID], "what was my revenue?")]
 
     fake_tool.assert_awaited_once()
     assert events[0] == TextChunk(text="Revenue was $500.")
@@ -115,7 +115,7 @@ async def test_round_cap_exceeded_raises_agent_incomplete():
 
     with patch("app.agent.insights.GeminiClient", return_value=mock_client):
         with pytest.raises(AgentIncompleteError):
-            async for _event in answer_question_stream(_RID, "what was my revenue?"):
+            async for _event in answer_question_stream([_RID], "what was my revenue?"):
                 pass
 
 
@@ -126,7 +126,10 @@ async def test_deeper_analysis_keyword_escalates_to_pro():
 
     with patch("app.agent.insights.GeminiClient", return_value=mock_client):
         events = [
-            event async for event in answer_question_stream(_RID, "give me a deep dive on revenue")
+            event
+            async for event in answer_question_stream(
+                [_RID], "give me a deep dive on revenue"
+            )
         ]
 
     assert events[-1].result.model == PRO_MODEL

@@ -22,7 +22,7 @@ Deterministic and idempotent — running it again always produces the exact same
 
 Seed window: 90 calendar days ending **2026-07-14** (fixed `SEED_END_DATE`, not "today" — see ADR-004).
 
-Actual seeded row counts (from the most recent `python -m app.seed.seed` run): 5 restaurants, 59 menu items, 37,019 transactions, 94,113 transaction items, 142 reviews, 17 campaigns. These non-transaction-and-review-adjacent counts (menu items, restaurants) stay fixed across code changes; the exact transaction/review/campaign counts can shift slightly whenever generator code changes the number of `rng` draws consumed earlier in the fixed generation sequence (menu items → transactions → reviews → campaigns, per restaurant) — expected and harmless given the single shared `random.Random` stream ADR-004 describes, not a sign of broken determinism (the same code + same `FIXED_SEED` still always produces the same output).
+Actual seeded row counts (from the most recent `python -m app.seed.seed` run, post-Phase 8): 5 restaurants, 69 menu items (was 59 — Phase 8 adds 2 upsell/add-on items per restaurant), 36,707 transactions, 101,954 transaction items, 158 reviews, 23 campaigns. These non-transaction-and-review-adjacent counts (restaurants) stay fixed across code changes; the exact menu item/transaction/review/campaign counts can shift whenever generator code changes the number of `rng` draws consumed earlier in the fixed generation sequence (menu items → transactions → reviews → campaigns, per restaurant) — expected and harmless given the single shared `random.Random` stream ADR-004 describes, not a sign of broken determinism (the same code + same `FIXED_SEED` still always produces the same output).
 
 ---
 
@@ -46,19 +46,19 @@ GROUP BY dow ORDER BY dow;
 
 (Postgres `EXTRACT(DOW ...)`: Sunday=0 ... Saturday=6, so Tuesday = 2.)
 
-**Actual result (most recent seed run):**
+**Actual result (most recent seed run, post-Phase 8 — Phase 8's upsell-item generation shifted the shared `rng` draw sequence, changing these exact figures from earlier phases without changing the pattern itself; see the row-count note above):**
 
 | dow | avg_daily_revenue |
 |---|---|
-| 0 (Sun) | $3,296.66 |
-| 1 (Mon) | $2,710.83 |
-| **2 (Tue)** | **$1,354.40** |
-| 3 (Wed) | $2,723.32 |
-| 4 (Thu) | $2,949.22 |
-| 5 (Fri) | $3,783.32 |
-| 6 (Sat) | $3,758.04 |
+| 0 (Sun) | $3,550.67 |
+| 1 (Mon) | $2,704.35 |
+| **2 (Tue)** | **$1,252.95** |
+| 3 (Wed) | $2,902.95 |
+| 4 (Thu) | $3,100.95 |
+| 5 (Fri) | $3,838.87 |
+| 6 (Sat) | $4,009.58 |
 
-Average of the other six days: $3,203.57. Tuesday ($1,354.40) is **~57.7% below** that average — comfortably clears the "at least 20% below" bar named in `implementation-plan.md`.
+Average of the other six days: $3,351.23. Tuesday ($1,252.95) is **~62.6% below** that average — comfortably clears the "at least 20% below" bar named in `implementation-plan.md`.
 
 **Control check:** Casa Verde (no deliberate pattern) shows Tuesday within ±20% of its own weekly average — proving Golden Skillet's suppression is restaurant-specific, not a shared-baseline artifact.
 
@@ -96,7 +96,7 @@ WHERE bucket IS NOT NULL
 GROUP BY bucket;
 ```
 
-**Actual result:** first 30 days = 363 units sold, last 30 days = 1,096 units sold — a **~3.0x increase**, clearing the "at least 2x" bar and matching the ramp formula's own prediction (see `generators.py`'s docstring: "~3x rise... averaged over each 30-day third").
+**Actual result (post-Phase 8 reseed):** first 30 days = 363 units sold, last 30 days = 1,036 units sold — a **~2.9x increase**, clearing the "at least 2x" bar and matching the ramp formula's own prediction (see `generators.py`'s docstring: "~3x rise... averaged over each 30-day third").
 
 ---
 
@@ -112,7 +112,7 @@ FROM transactions t JOIN restaurants r ON r.id = t.restaurant_id
 GROUP BY is_sakura;
 ```
 
-**Actual result:** Sakura Table's average ticket = $83.33, vs. $39.41 for the other four restaurants combined — Sakura Table runs at **~2.1x** the cohort average, well clear of the "at least 1.3x" bar. This is the exact pattern Phase 2's peer/cohort comparison tool should surface.
+**Actual result (post-Phase 8 reseed):** Sakura Table's average ticket = $85.00, vs. $42.34 for the other four restaurants combined — Sakura Table runs at **~2.0x** the cohort average, well clear of the "at least 1.3x" bar. This is the exact pattern Phase 2's peer/cohort comparison tool should surface.
 
 This third pattern goes beyond the two examples `implementation-plan.md` names explicitly (both introduced with "e.g.") — it exists specifically to give the cohort-comparison tool a genuine, hand-verifiable structural difference to detect.
 
@@ -147,6 +147,40 @@ psql -U ask_sous -d ask_sous -c "SELECT COUNT(*) FROM campaigns WHERE embedding 
 ```
 
 Once populated with live credentials, both counts should read **138** and **16** respectively — matching every review and campaign seeded above — and re-running `embed_seed_data.py` again should leave both counts unchanged (idempotent, per ADR-008). **Status: run for real (2026-07-16)** — see `docs/decisions/013-live-credentials-verification.md`. Re-run it again after any reseed, since `seed.py` truncates and regenerates the `reviews`/`campaigns` tables (and their `id`s) from scratch, leaving the new rows' `embedding` columns `NULL` until `embed_seed_data.py` runs again.
+
+## Pattern 4 — Upsell attach rate and campaign attribution (Phase 8)
+
+**Mechanism (upsells):** `generate_menu_items()` tags two designated add-on items per restaurant (`UPSELL_ITEM_POOLS` in `generators.py`, e.g. Golden Skillet's "Extra Gravy"/"Add Bacon") with `is_upsell = true`, priced from `ADDON_PRICE_RANGE` ($2–6). `generate_transactions_and_items()` excludes upsell items from the normal line-item pool, then independently rolls a per-transaction attach check at `UPSELL_ATTACH_PROBABILITY = 0.25` — an attached upsell item is always quantity 1.
+
+**Verify by hand:**
+
+```sql
+SELECT r.name,
+  COUNT(DISTINCT t.id) FILTER (WHERE ti.id IS NOT NULL) AS transactions_with_upsell,
+  COUNT(DISTINCT t.id) AS total_transactions
+FROM transactions t
+JOIN restaurants r ON r.id = t.restaurant_id
+LEFT JOIN transaction_items ti ON ti.transaction_id = t.id
+  AND ti.menu_item_id IN (SELECT id FROM menu_items WHERE is_upsell = TRUE AND restaurant_id = r.id)
+GROUP BY r.name ORDER BY r.name;
+```
+
+**Actual result (most recent seed run):** attach rate lands consistently close to the 25% target across all five restaurants — Golden Skillet 25.2%, Bella Notte 24.5%, Sakura Table 24.4%, Casa Verde 23.9%, Harbor & Vine 25.0% — well within `get_upsell_metrics`'s own test tolerance (0.15–0.35).
+
+**Mechanism (campaign attribution):** `attribute_transactions_to_campaigns()` (`generators.py`, run once in `seed.py` after both transactions and campaigns exist) attributes a probabilistic fraction (`CAMPAIGN_ATTRIBUTION_RATE_RANGE = 0.15–0.30`, drawn per campaign) of each **sent** campaign's candidate transactions — those falling within `CAMPAIGN_ATTRIBUTION_WINDOW_DAYS = 5` after `sent_at` — to that campaign, first-touch and non-overlapping across campaigns. See `docs/decisions/014-campaign-attribution-mechanism.md`.
+
+**Verify by hand:**
+
+```sql
+SELECT COUNT(*) FILTER (WHERE sent_at IS NOT NULL) AS sent_campaigns,
+       (SELECT COUNT(*) FROM transactions WHERE campaign_id IS NOT NULL) AS attributed_transactions,
+       (SELECT COUNT(*) FROM transactions) AS total_transactions
+FROM campaigns;
+```
+
+**Actual result:** 23 sent campaigns (of 17–ish generated per restaurant across 5 restaurants — draft-only campaigns have no `sent_at` and attribute nothing), 1,986 transactions attributed out of 36,707 total (~5.4% of all transactions — consistent with a 15–30% attach rate applied only within each campaign's own narrow 5-day post-send window, not against the full 90-day window).
+
+---
 
 ### Review text content
 

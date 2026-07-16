@@ -33,7 +33,7 @@ describe("ChatPage", () => {
     });
 
     const user = userEvent.setup();
-    render(<ChatPage restaurantId="rid-1" />);
+    render(<ChatPage restaurantIds={["rid-1"]} />);
 
     await user.type(screen.getByRole("textbox"), "how much did I make?");
     await user.click(screen.getByRole("button", { name: /send/i }));
@@ -53,7 +53,7 @@ describe("ChatPage", () => {
     });
 
     const user = userEvent.setup();
-    render(<ChatPage restaurantId="rid-1" />);
+    render(<ChatPage restaurantIds={["rid-1"]} />);
 
     await user.type(screen.getByRole("textbox"), "hi");
     await user.click(screen.getByRole("button", { name: /send/i }));
@@ -65,7 +65,7 @@ describe("ChatPage", () => {
 
   it("does not submit an empty question", async () => {
     const user = userEvent.setup();
-    render(<ChatPage restaurantId="rid-1" />);
+    render(<ChatPage restaurantIds={["rid-1"]} />);
 
     await user.click(screen.getByRole("button", { name: /send/i }));
 

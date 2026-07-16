@@ -50,7 +50,9 @@ describe("AppShell", () => {
   it("renders the restaurant switcher", () => {
     renderShell();
 
-    expect(screen.getByRole("combobox")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Golden Skillet" }),
+    ).toBeInTheDocument();
   });
 
   it("renders both panels", () => {

@@ -88,7 +88,7 @@ async def test_chat_end_to_end_real_tool_real_db_real_logging(seeded_restaurants
             response = await client.post(
                 "/chat",
                 json={
-                    "restaurant_id": str(restaurant_id),
+                    "restaurant_ids": [str(restaurant_id)],
                     "question": "how did I do last month?",
                 },
             )
@@ -137,7 +137,7 @@ async def test_chat_malformed_model_tool_call_does_not_crash_and_retries(seeded_
         with patch("app.agent.insights.GeminiClient", return_value=mock_client):
             response = await client.post(
                 "/chat",
-                json={"restaurant_id": str(restaurant_id), "question": "how did I do?"},
+                json={"restaurant_ids": [str(restaurant_id)], "question": "how did I do?"},
             )
 
     assert response.status_code == 200

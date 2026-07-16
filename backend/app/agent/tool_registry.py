@@ -1,7 +1,9 @@
-"""Explicit, hand-written function-calling schemas for the five insights
-tools (four Phase 2 aggregation tools + the raw SQL tool). Schemas are
-hand-written rather than introspected from Python type hints because
-UUID/date/Decimal don't map cleanly to JSON Schema.
+"""Explicit, hand-written function-calling schemas for the insights tools:
+four Phase 2 aggregation tools, the raw SQL tool, search_customer_reviews
+(Phase 4), and four Phase 8 tools (compare_locations, list_campaigns,
+get_campaign_performance, get_upsell_metrics). Schemas are hand-written
+rather than introspected from Python type hints because UUID/date/Decimal
+don't map cleanly to JSON Schema.
 
 TOOL_DISPATCH pairs each schema with:
 - parse_args: JSON (str-keyed dict from the model) -> real Python kwargs
@@ -21,11 +23,14 @@ from decimal import Decimal
 from typing import Any, NamedTuple
 
 from app.agent.llm_client import ToolDeclaration
+from app.agent.tools.campaign_performance import get_campaign_performance, list_campaigns
 from app.agent.tools.cohort_comparison import _METRIC_EXPRESSIONS, get_cohort_comparison
 from app.agent.tools.item_velocity import get_item_velocity
+from app.agent.tools.locations_comparison import compare_locations
 from app.agent.tools.period_comparison import compare_periods
 from app.agent.tools.raw_sql import run_readonly_query
 from app.agent.tools.revenue_summary import get_revenue_summary
+from app.agent.tools.upsell_metrics import get_upsell_metrics
 from app.agent.tools.vector_search import search_reviews
 
 
@@ -45,11 +50,11 @@ def _to_jsonable(value: Any) -> Any:
     return value
 
 
-def _parse_uuid(raw: str) -> uuid.UUID:
+def _parse_uuid(raw: str, *, field_name: str = "restaurant_id") -> uuid.UUID:
     try:
         return uuid.UUID(raw)
     except (ValueError, AttributeError, TypeError) as exc:
-        raise ValueError(f"Invalid restaurant_id {raw!r}: {exc}") from exc
+        raise ValueError(f"Invalid {field_name} {raw!r}: {exc}") from exc
 
 
 def _parse_date(raw: str) -> datetime.date:
@@ -115,7 +120,30 @@ def _parse_search_customer_reviews_args(args: dict[str, Any]) -> dict[str, Any]:
     return parsed
 
 
+def _parse_restaurant_ids_and_date_range(args: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "restaurant_ids": [
+            _parse_uuid(r, field_name="restaurant_ids[]") for r in args["restaurant_ids"]
+        ],
+        "start_date": _parse_date(args["start_date"]),
+        "end_date": _parse_date(args["end_date"]),
+    }
+
+
+def _parse_list_campaigns_args(args: dict[str, Any]) -> dict[str, Any]:
+    return {"restaurant_id": _parse_uuid(args["restaurant_id"])}
+
+
+def _parse_get_campaign_performance_args(args: dict[str, Any]) -> dict[str, Any]:
+    return {"campaign_id": _parse_uuid(args["campaign_id"], field_name="campaign_id")}
+
+
 _RESTAURANT_ID_PARAM = {"type": "STRING", "description": "The restaurant's UUID, as a string."}
+_RESTAURANT_IDS_PARAM = {
+    "type": "ARRAY",
+    "items": {"type": "STRING"},
+    "description": "The UUIDs of the selected restaurants, as strings.",
+}
 _DATE_PARAM_DESC = "An ISO-8601 date, e.g. 2026-06-15."
 
 
@@ -244,6 +272,73 @@ INSIGHTS_TOOLS: list[ToolDeclaration] = [
             "required": ["restaurant_id", "query"],
         },
     ),
+    ToolDeclaration(
+        name="compare_locations",
+        description=(
+            "Compares revenue, transaction count, and average ticket across two or more "
+            "restaurants over the same date range — use this whenever more than one "
+            "restaurant is in scope for the question, instead of calling the "
+            "single-restaurant tools once per restaurant."
+        ),
+        parameters={
+            "type": "OBJECT",
+            "properties": {
+                "restaurant_ids": _RESTAURANT_IDS_PARAM,
+                "start_date": {"type": "STRING", "description": _DATE_PARAM_DESC},
+                "end_date": {"type": "STRING", "description": _DATE_PARAM_DESC},
+            },
+            "required": ["restaurant_ids", "start_date", "end_date"],
+        },
+    ),
+    ToolDeclaration(
+        name="list_campaigns",
+        description=(
+            "Lists a restaurant's past marketing campaigns (name, channel, send date) — "
+            "use this first to find a campaign's id before calling get_campaign_performance, "
+            "unless the caller already has the exact campaign_id."
+        ),
+        parameters={
+            "type": "OBJECT",
+            "properties": {"restaurant_id": _RESTAURANT_ID_PARAM},
+            "required": ["restaurant_id"],
+        },
+    ),
+    ToolDeclaration(
+        name="get_campaign_performance",
+        description=(
+            "How a specific past campaign performed: revenue and transaction count "
+            "attributed to it, compared against that restaurant's own baseline revenue "
+            "in the days immediately before the campaign was sent. Requires a campaign_id "
+            "— use list_campaigns first if you only know the campaign by name or date."
+        ),
+        parameters={
+            "type": "OBJECT",
+            "properties": {
+                "campaign_id": {
+                    "type": "STRING",
+                    "description": "The campaign's UUID, as a string.",
+                }
+            },
+            "required": ["campaign_id"],
+        },
+    ),
+    ToolDeclaration(
+        name="get_upsell_metrics",
+        description=(
+            "Upsell attach rate (percentage of transactions that included a designated "
+            "add-on item) and total upsell revenue, for one or more restaurants over a "
+            "date range."
+        ),
+        parameters={
+            "type": "OBJECT",
+            "properties": {
+                "restaurant_ids": _RESTAURANT_IDS_PARAM,
+                "start_date": {"type": "STRING", "description": _DATE_PARAM_DESC},
+                "end_date": {"type": "STRING", "description": _DATE_PARAM_DESC},
+            },
+            "required": ["restaurant_ids", "start_date", "end_date"],
+        },
+    ),
 ]
 
 
@@ -254,4 +349,10 @@ TOOL_DISPATCH: dict[str, ToolSpec] = {
     "get_cohort_comparison": ToolSpec(get_cohort_comparison, _parse_cohort_comparison_args),
     "run_readonly_query": ToolSpec(run_readonly_query, _parse_raw_sql_args),
     "search_customer_reviews": ToolSpec(search_reviews, _parse_search_customer_reviews_args),
+    "compare_locations": ToolSpec(compare_locations, _parse_restaurant_ids_and_date_range),
+    "list_campaigns": ToolSpec(list_campaigns, _parse_list_campaigns_args),
+    "get_campaign_performance": ToolSpec(
+        get_campaign_performance, _parse_get_campaign_performance_args
+    ),
+    "get_upsell_metrics": ToolSpec(get_upsell_metrics, _parse_restaurant_ids_and_date_range),
 }

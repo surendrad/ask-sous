@@ -93,7 +93,7 @@ async def test_chat_end_to_end_with_review_search_tool(admin_engine, seeded_rest
             response = await client.post(
                 "/chat",
                 json={
-                    "restaurant_id": str(restaurant_id),
+                    "restaurant_ids": [str(restaurant_id)],
                     "question": "what are customers saying about the service?",
                 },
             )

@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -76,6 +77,7 @@ class MenuItem(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     category: Mapped[str] = mapped_column(String(40), nullable=False)
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    is_upsell: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
 
     restaurant: Mapped["Restaurant"] = relationship(back_populates="menu_items")
 
@@ -91,11 +93,23 @@ class Transaction(TimestampMixin, Base):
     total_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     payment_type: Mapped[str] = mapped_column(String(20), nullable=False)
     channel: Mapped[str] = mapped_column(String(20), nullable=False)
+    # Which campaign (if any) this transaction is attributed to — nullable,
+    # since most transactions aren't tied to a campaign. Synthetic in seed
+    # data (see docs/decisions on campaign attribution), not a real
+    # promo-code mechanism. SET NULL on campaign delete: losing the
+    # attribution link shouldn't cascade-delete real transaction history.
+    campaign_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("campaigns.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     restaurant: Mapped["Restaurant"] = relationship(back_populates="transactions")
     transaction_items: Mapped[list["TransactionItem"]] = relationship(
         back_populates="transaction", cascade="all, delete-orphan"
     )
+    campaign: Mapped["Campaign | None"] = relationship()
 
     __table_args__ = (
         CheckConstraint(

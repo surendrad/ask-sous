@@ -20,7 +20,10 @@ export type Restaurant = {
 export type ChatToolCall = {
   tool_name: string;
   arguments: Record<string, unknown>;
-  result: Record<string, unknown> | null;
+  // Most tools return a single object, but multi-restaurant tools like
+  // compare_locations()/get_upsell_metrics() return an array (one entry
+  // per restaurant).
+  result: Record<string, unknown> | unknown[] | null;
   error: string | null;
 };
 
@@ -57,10 +60,18 @@ export type TopItem = {
   total_quantity: number;
 };
 
-export type DashboardData = {
+export type LocationDashboard = {
+  restaurant_id: string;
+  restaurant_name: string;
   kpis: DashboardKpis;
   revenue_trend: RevenueTrendDay[];
-  top_items: TopItem[];
+  upsell_attach_rate: string;
+};
+
+export type DashboardData = {
+  locations: LocationDashboard[];
+  totals: DashboardKpis;
+  top_items: TopItem[] | null;
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -92,11 +103,12 @@ export async function getRestaurants(): Promise<Restaurant[]> {
 }
 
 export async function getDashboard(
-  restaurantId: string,
+  restaurantIds: string[],
 ): Promise<DashboardData> {
-  return requestJson<DashboardData>(
-    `/dashboard?restaurant_id=${encodeURIComponent(restaurantId)}`,
-  );
+  const params = restaurantIds
+    .map((id) => `restaurant_ids=${encodeURIComponent(id)}`)
+    .join("&");
+  return requestJson<DashboardData>(`/dashboard?${params}`);
 }
 
 export async function generateCampaign(
@@ -127,14 +139,14 @@ type StreamChatHandlers = {
  * `error` event.
  */
 export async function streamChat(
-  restaurantId: string,
+  restaurantIds: string[],
   question: string,
   handlers: StreamChatHandlers,
 ): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ restaurant_id: restaurantId, question }),
+    body: JSON.stringify({ restaurant_ids: restaurantIds, question }),
   });
 
   const contentType = response.headers.get("content-type") ?? "";

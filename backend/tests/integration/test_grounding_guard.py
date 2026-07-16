@@ -44,7 +44,7 @@ async def test_properly_mocked_scenario_always_has_tool_calls(question, seeded_r
     )
 
     with patch("app.agent.insights.GeminiClient", return_value=mock_client):
-        result = await answer_question(restaurant_id, question)
+        result = await answer_question([restaurant_id], question)
 
     assert len(result.tool_calls) > 0
 
@@ -56,5 +56,5 @@ async def test_zero_tool_call_scenario_fails_the_guard_assertion(question):
 
     with pytest.raises(AssertionError):
         with patch("app.agent.insights.GeminiClient", return_value=mock_client):
-            result = await answer_question(_RID, question)
+            result = await answer_question([_RID], question)
         assert len(result.tool_calls) > 0

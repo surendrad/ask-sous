@@ -1,3 +1,4 @@
+import asyncio
 import json
 import uuid
 from collections.abc import AsyncIterator
@@ -19,14 +20,18 @@ router = APIRouter()
 
 
 class ChatRequest(BaseModel):
-    restaurant_id: uuid.UUID
+    restaurant_ids: list[uuid.UUID] = Field(min_length=1)
     question: str = Field(min_length=1, max_length=2000)
 
 
 class ToolCallSummary(BaseModel):
     tool_name: str
     arguments: dict
-    result: dict | None
+    # Most tools return a single dict, but multi-restaurant tools like
+    # compare_locations()/get_upsell_metrics() return a list (one entry per
+    # restaurant) — found via a live /chat call against a real multi-location
+    # question, which crashed here before this type accounted for it.
+    result: dict | list | None
     error: str | None
 
 
@@ -93,13 +98,14 @@ async def _event_stream(
 
 @router.post("/chat", response_model=None)
 async def chat(payload: ChatRequest) -> JSONResponse | StreamingResponse:
-    if not await restaurant_exists(payload.restaurant_id):
+    exists = await asyncio.gather(*(restaurant_exists(rid) for rid in payload.restaurant_ids))
+    if not all(exists):
         return JSONResponse(
             status_code=404,
             content=error_response("Restaurant not found.", "restaurant_not_found"),
         )
 
-    stream = answer_question_stream(payload.restaurant_id, payload.question)
+    stream = answer_question_stream(payload.restaurant_ids, payload.question)
     # Pull the first event outside the StreamingResponse so a failure that
     # happens before anything has been sent to the client still goes
     # through the normal AgentUnavailableError/AgentIncompleteError ->

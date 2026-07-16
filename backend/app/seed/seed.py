@@ -16,6 +16,7 @@ from app.db.session import async_session_maker
 from app.seed.generators import (
     FIXED_SEED,
     RESTAURANT_PROFILES,
+    attribute_transactions_to_campaigns,
     generate_campaigns,
     generate_menu_items,
     generate_reviews,
@@ -71,26 +72,29 @@ async def seed_database(session: AsyncSession) -> dict[str, int]:
         transactions, transaction_items = generate_transactions_and_items(
             rng, restaurant_id, profile["name"], profile["size_category"], menu_items
         )
+        campaigns = generate_campaigns(
+            rng, faker, restaurant_id, profile["name"], profile["cuisine"], menu_items
+        )
+        # Attribution needs both this restaurant's transactions and
+        # campaigns to already exist, so it runs after both are generated.
+        transactions = attribute_transactions_to_campaigns(rng, transactions, campaigns)
+
         all_transactions.extend(transactions)
         all_transaction_items.extend(transaction_items)
-
+        all_campaigns.extend(campaigns)
         all_reviews.extend(
             generate_reviews(rng, faker, restaurant_id, profile["cuisine"], menu_items)
         )
-        all_campaigns.extend(
-            generate_campaigns(
-                rng, faker, restaurant_id, profile["name"], profile["cuisine"], menu_items
-            )
-        )
 
     # Bulk Core-level inserts — at ~30-40k transaction rows, per-row ORM
-    # flushes would be far too slow.
+    # flushes would be far too slow. Campaigns must be inserted before
+    # transactions now that transactions.campaign_id FKs into campaigns.
     await session.execute(insert(Restaurant.__table__), all_restaurants)
     await session.execute(insert(MenuItem.__table__), all_menu_items)
+    await session.execute(insert(Campaign.__table__), all_campaigns)
     await session.execute(insert(Transaction.__table__), all_transactions)
     await session.execute(insert(TransactionItem.__table__), all_transaction_items)
     await session.execute(insert(Review.__table__), all_reviews)
-    await session.execute(insert(Campaign.__table__), all_campaigns)
     await session.commit()
 
     return {

@@ -160,3 +160,42 @@ async def test_readonly_role_cannot_insert_into_restaurants(readonly_engine):
                     "VALUES (gen_random_uuid(), 'x', 'x', 'x', 'x', 'small', 'x')"
                 )
             )
+
+
+async def test_menu_items_is_upsell_column(admin_engine):
+    async with admin_engine.connect() as conn:
+        result = await conn.execute(
+            text(
+                "SELECT data_type, is_nullable, column_default FROM information_schema.columns "
+                "WHERE table_name = 'menu_items' AND column_name = 'is_upsell'"
+            )
+        )
+        data_type, is_nullable, column_default = result.one()
+    assert data_type == "boolean"
+    assert is_nullable == "NO"
+    assert column_default is not None
+
+
+async def test_transactions_campaign_id_column(admin_engine):
+    async with admin_engine.connect() as conn:
+        result = await conn.execute(
+            text(
+                "SELECT data_type, is_nullable FROM information_schema.columns "
+                "WHERE table_name = 'transactions' AND column_name = 'campaign_id'"
+            )
+        )
+        data_type, is_nullable = result.one()
+    assert data_type == "uuid"
+    assert is_nullable == "YES"
+
+
+async def test_transactions_campaign_id_foreign_key_set_null_on_delete(admin_engine):
+    async with admin_engine.connect() as conn:
+        result = await conn.execute(
+            text(
+                "SELECT confdeltype FROM pg_constraint "
+                "WHERE conname = 'fk_transactions_campaign_id_campaigns'"
+            )
+        )
+        (confdeltype,) = result.one()
+    assert confdeltype == b"n"  # 'n' = SET NULL

@@ -40,7 +40,9 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByText("Ask Sous")).toBeInTheDocument();
     });
-    expect(screen.getByRole("combobox")).toHaveValue("a");
+    expect(
+      screen.getByRole("button", { name: "Golden Skillet" }),
+    ).toBeInTheDocument();
   });
 
   it("shows an error state when restaurants fail to load", async () => {
@@ -81,7 +83,8 @@ describe("App", () => {
       expect(screen.getByText("Revenue was $500.")).toBeInTheDocument(),
     );
 
-    await user.selectOptions(screen.getByRole("combobox"), "Blue Lotus");
+    await user.click(screen.getByRole("button", { name: "Golden Skillet" }));
+    await user.click(screen.getByRole("checkbox", { name: "Blue Lotus" }));
 
     expect(screen.queryByText("Revenue was $500.")).not.toBeInTheDocument();
   });

@@ -130,14 +130,15 @@ async def _resolve_tool_call_round(
     history.append(ToolResultsTurn(results=results))
 
 
-async def answer_question(restaurant_id: uuid.UUID, question: str) -> AgentTurnResult:
+async def answer_question(restaurant_ids: list[uuid.UUID], question: str) -> AgentTurnResult:
+    restaurant_id_strs = [str(r) for r in restaurant_ids]
     structlog.contextvars.bind_contextvars(
-        turn_id=str(uuid.uuid4()), restaurant_id=str(restaurant_id)
+        turn_id=str(uuid.uuid4()), restaurant_ids=restaurant_id_strs
     )
     try:
-        logger.info("agent_turn_started", question=question, restaurant_id=str(restaurant_id))
+        logger.info("agent_turn_started", question=question, restaurant_ids=restaurant_id_strs)
         client = GeminiClient()
-        system_instruction = build_insights_system_instruction(restaurant_id)
+        system_instruction = build_insights_system_instruction(restaurant_ids)
         history: list[ConversationEntry] = [UserText(question)]
         tool_calls: list[ToolCallRecord] = []
 
@@ -181,19 +182,20 @@ class AgentTurnComplete:
 
 
 async def answer_question_stream(
-    restaurant_id: uuid.UUID, question: str
+    restaurant_ids: list[uuid.UUID], question: str
 ) -> AsyncIterator[TextChunk | AgentTurnComplete]:
     """Same orchestration as answer_question() — model routing, tool
     dispatch, grounding check, audit logging — but yields TextChunk events
     as a final-answer round's text arrives instead of returning once,
     terminating with a single AgentTurnComplete."""
+    restaurant_id_strs = [str(r) for r in restaurant_ids]
     structlog.contextvars.bind_contextvars(
-        turn_id=str(uuid.uuid4()), restaurant_id=str(restaurant_id)
+        turn_id=str(uuid.uuid4()), restaurant_ids=restaurant_id_strs
     )
     try:
-        logger.info("agent_turn_started", question=question, restaurant_id=str(restaurant_id))
+        logger.info("agent_turn_started", question=question, restaurant_ids=restaurant_id_strs)
         client = GeminiClient()
-        system_instruction = build_insights_system_instruction(restaurant_id)
+        system_instruction = build_insights_system_instruction(restaurant_ids)
         history: list[ConversationEntry] = [UserText(question)]
         tool_calls: list[ToolCallRecord] = []
 

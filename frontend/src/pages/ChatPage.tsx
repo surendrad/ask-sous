@@ -17,10 +17,10 @@ type Message = {
 };
 
 type ChatPageProps = {
-  restaurantId: string;
+  restaurantIds: string[];
 };
 
-export default function ChatPage({ restaurantId }: ChatPageProps) {
+export default function ChatPage({ restaurantIds }: ChatPageProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [question, setQuestion] = useState("");
   const [isWaiting, setIsWaiting] = useState(false);
@@ -41,7 +41,7 @@ export default function ChatPage({ restaurantId }: ChatPageProps) {
     let hasStartedStreaming = false;
     const agentMessageId = crypto.randomUUID();
 
-    await streamChat(restaurantId, trimmed, {
+    await streamChat(restaurantIds, trimmed, {
       onChunk: (text) => {
         setIsWaiting(false);
         setMessages((prev) => {

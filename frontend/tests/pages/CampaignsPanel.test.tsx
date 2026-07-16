@@ -97,4 +97,23 @@ describe("CampaignsPanel", () => {
       expect(writeText).toHaveBeenCalledWith("Taco Tuesday is back!");
     });
   });
+
+  it("shows a prompt and disables Generate when multiple locations are selected", () => {
+    render(<CampaignsPanel restaurantId="rid-1" isMultipleSelected />);
+
+    expect(
+      screen.getByText(/select exactly one location/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /generate/i })).toBeDisabled();
+  });
+
+  it("does not call generateCampaign while multiple locations are selected", async () => {
+    const user = userEvent.setup();
+    render(<CampaignsPanel restaurantId="rid-1" isMultipleSelected />);
+
+    await user.type(screen.getByRole("textbox"), "Announce taco special");
+    await user.click(screen.getByRole("button", { name: /generate/i }));
+
+    expect(generateCampaign).not.toHaveBeenCalled();
+  });
 });

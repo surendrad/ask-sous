@@ -220,6 +220,32 @@ TRUFFLE_FRIES_P_START = 0.05
 TRUFFLE_FRIES_P_SLOPE = 0.30
 TRUFFLE_FRIES_ITEM_NAME = "Truffle Fries"
 
+# Designated add-on/upsell items (Phase 8) — kept in a companion structure,
+# not mixed into MENU_ITEM_POOLS, so the existing item-velocity/trend
+# patterns above (keyed off the base pool) are untouched. Two per
+# restaurant: enough to be interesting without diluting the base menu.
+UPSELL_ITEM_POOLS: dict[str, list[str]] = {
+    "Golden Skillet": ["Extra Gravy", "Add Bacon"],
+    "Bella Notte": ["Extra Parmesan", "Add Prosciutto"],
+    "Sakura Table": ["Add Extra Toro", "Extra Wasabi Flight"],
+    "Casa Verde": ["Add Guac", "Extra Salsa Roja"],
+    "Harbor & Vine": ["Add Butter-Poached Lobster", "Extra Remoulade"],
+}
+ADDON_PRICE_RANGE: tuple[float, float] = (2.0, 6.0)
+UPSELL_CATEGORY = "addon"
+
+# Probability that a transaction's base order also includes one upsell
+# item, independent of restaurant identity or the Truffle Fries pattern
+# above (which is about a real, primarily-ordered appetizer's trend over
+# time, not an add-on). See docs/decisions on upsell measurement.
+UPSELL_ATTACH_PROBABILITY = 0.25
+
+# Synthetic campaign-to-transaction attribution (Phase 8) — not a real
+# promo-code mechanism, since none exists in this schema. See
+# docs/decisions on campaign attribution.
+CAMPAIGN_ATTRIBUTION_WINDOW_DAYS = 5
+CAMPAIGN_ATTRIBUTION_RATE_RANGE: tuple[float, float] = (0.15, 0.30)
+
 CAMPAIGN_COPY_TEMPLATES = [
     "Craving {cuisine}? {name} has something special waiting this week — come try {item}.",
     "{name} misses you! Stop by for {item} and a seat at our table.",
@@ -312,6 +338,21 @@ def generate_menu_items(rng, restaurant_id: uuid.UUID, restaurant_name: str) -> 
                 "name": name,
                 "category": category,
                 "price": price,
+                "is_upsell": False,
+            }
+        )
+
+    addon_low, addon_high = ADDON_PRICE_RANGE
+    for name in UPSELL_ITEM_POOLS[restaurant_name]:
+        price = Decimal(str(round(rng.uniform(addon_low, addon_high), 2)))
+        items.append(
+            {
+                "id": rng_uuid(rng),
+                "restaurant_id": restaurant_id,
+                "name": name,
+                "category": UPSELL_CATEGORY,
+                "price": price,
+                "is_upsell": True,
             }
         )
     return items
@@ -333,8 +374,11 @@ def generate_transactions_and_items(
     transactions: list[dict] = []
     transaction_items: list[dict] = []
 
-    non_truffle_items = [m for m in menu_items if m["name"] != TRUFFLE_FRIES_ITEM_NAME]
+    non_truffle_items = [
+        m for m in menu_items if m["name"] != TRUFFLE_FRIES_ITEM_NAME and not m["is_upsell"]
+    ]
     truffle_item = next((m for m in menu_items if m["name"] == TRUFFLE_FRIES_ITEM_NAME), None)
+    upsell_items = [m for m in menu_items if m["is_upsell"]]
 
     for day_index, day in enumerate(seed_window_dates()):
         weekday = day.weekday()
@@ -365,6 +409,9 @@ def generate_transactions_and_items(
                 if rng.random() < _truffle_fries_probability(day_index):
                     qty = rng.choices(QUANTITY_CHOICES, weights=QUANTITY_WEIGHTS)[0]
                     line_items.append({"menu_item": truffle_item, "quantity": qty})
+
+            if upsell_items and rng.random() < UPSELL_ATTACH_PROBABILITY:
+                line_items.append({"menu_item": rng.choice(upsell_items), "quantity": 1})
 
             total_amount = sum(
                 (Decimal(li["quantity"]) * li["menu_item"]["price"] for li in line_items),
@@ -442,13 +489,16 @@ def generate_campaigns(
 ) -> list[dict]:
     count = rng.randint(3, 5)
     window = seed_window_dates()
+    # A campaign shouldn't feature an add-on ("Extra Gravy") as its star
+    # dish — only real, primarily-ordered items are eligible.
+    featurable_items = [m for m in menu_items if not m["is_upsell"]]
     campaigns = []
     for _ in range(count):
         day = rng.choice(window)
         sent_at = datetime(
             day.year, day.month, day.day, rng.randint(9, 20), rng.randint(0, 59), tzinfo=UTC
         )
-        item = rng.choice(menu_items)["name"]
+        item = rng.choice(featurable_items)["name"]
         template = rng.choice(CAMPAIGN_COPY_TEMPLATES)
         copy_text = template.format(name=restaurant_name, cuisine=cuisine, item=item)
         campaigns.append(
@@ -466,3 +516,41 @@ def generate_campaigns(
             }
         )
     return campaigns
+
+
+def attribute_transactions_to_campaigns(
+    rng, transactions: list[dict], campaigns: list[dict]
+) -> list[dict]:
+    """Synthetic campaign attribution (Phase 8) — not a real promo-code
+    mechanism, since none exists in this schema. Returns a new list of
+    transaction dicts, each gaining a `campaign_id` key. Processes
+    campaigns in `sent_at` order, and for each one, picks a random fraction
+    (CAMPAIGN_ATTRIBUTION_RATE_RANGE) of the not-yet-attributed
+    transactions falling within CAMPAIGN_ATTRIBUTION_WINDOW_DAYS after its
+    `sent_at` — first-touch: a transaction already attributed to an earlier
+    campaign is never reassigned, avoiding double-attribution ambiguity.
+    """
+    result = [dict(t, campaign_id=None) for t in transactions]
+    attributed_ids: set[uuid.UUID] = set()
+
+    sent_campaigns = sorted(
+        (c for c in campaigns if c["sent_at"] is not None), key=lambda c: c["sent_at"]
+    )
+    for campaign in sent_campaigns:
+        window_end = campaign["sent_at"] + timedelta(days=CAMPAIGN_ATTRIBUTION_WINDOW_DAYS)
+        candidates = [
+            t
+            for t in result
+            if t["id"] not in attributed_ids
+            and campaign["sent_at"] <= t["transaction_time"] <= window_end
+        ]
+        if not candidates:
+            continue
+        rate = rng.uniform(*CAMPAIGN_ATTRIBUTION_RATE_RANGE)
+        chosen_count = round(len(candidates) * rate)
+        chosen = rng.sample(candidates, k=min(chosen_count, len(candidates)))
+        for t in chosen:
+            t["campaign_id"] = campaign["id"]
+            attributed_ids.add(t["id"])
+
+    return result

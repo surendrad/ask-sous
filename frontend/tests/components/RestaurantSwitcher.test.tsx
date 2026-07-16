@@ -14,8 +14,8 @@ const RESTAURANTS = [
 ];
 
 function Selected() {
-  const { selectedRestaurant } = useRestaurantContext();
-  return <span data-testid="selected">{selectedRestaurant?.name}</span>;
+  const { selectedRestaurantIds } = useRestaurantContext();
+  return <span data-testid="selected">{selectedRestaurantIds.join(",")}</span>;
 }
 
 function renderSwitcher() {
@@ -28,29 +28,59 @@ function renderSwitcher() {
 }
 
 describe("RestaurantSwitcher", () => {
-  it("lists every restaurant as an option", () => {
+  it("shows the single restaurant's name as the trigger label by default", () => {
     renderSwitcher();
 
     expect(
-      screen.getByRole("option", { name: "Golden Skillet" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("option", { name: "Blue Lotus" }),
+      screen.getByRole("button", { name: /Golden Skillet/ }),
     ).toBeInTheDocument();
   });
 
-  it("shows the currently selected restaurant", () => {
-    renderSwitcher();
-
-    expect(screen.getByRole("combobox")).toHaveValue("a");
-  });
-
-  it("switching updates the shared restaurant context", async () => {
+  it("opens a checkbox list of every restaurant when clicked", async () => {
     const user = userEvent.setup();
     renderSwitcher();
 
-    await user.selectOptions(screen.getByRole("combobox"), "Blue Lotus");
+    await user.click(screen.getByRole("button", { name: /Golden Skillet/ }));
 
-    expect(screen.getByTestId("selected")).toHaveTextContent("Blue Lotus");
+    expect(
+      screen.getByRole("checkbox", { name: "Golden Skillet" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: "Blue Lotus" }),
+    ).toBeInTheDocument();
+  });
+
+  it("checking an additional restaurant updates the selection and the trigger label", async () => {
+    const user = userEvent.setup();
+    renderSwitcher();
+
+    await user.click(screen.getByRole("button", { name: /Golden Skillet/ }));
+    await user.click(screen.getByRole("checkbox", { name: "Blue Lotus" }));
+
+    expect(screen.getByTestId("selected")).toHaveTextContent("a,b");
+    expect(
+      screen.getByRole("button", { name: /2 locations selected/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("the select-all checkbox selects every restaurant", async () => {
+    const user = userEvent.setup();
+    renderSwitcher();
+
+    await user.click(screen.getByRole("button", { name: /Golden Skillet/ }));
+    await user.click(screen.getByRole("checkbox", { name: /select all/i }));
+
+    expect(screen.getByTestId("selected")).toHaveTextContent("a,b");
+  });
+
+  it("unchecking a restaurant removes it from the selection", async () => {
+    const user = userEvent.setup();
+    renderSwitcher();
+
+    await user.click(screen.getByRole("button", { name: /Golden Skillet/ }));
+    await user.click(screen.getByRole("checkbox", { name: "Blue Lotus" }));
+    await user.click(screen.getByRole("checkbox", { name: "Golden Skillet" }));
+
+    expect(screen.getByTestId("selected")).toHaveTextContent("b");
   });
 });

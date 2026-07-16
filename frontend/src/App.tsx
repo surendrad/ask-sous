@@ -12,9 +12,9 @@ import ChatPage from "@/pages/ChatPage";
 import DashboardPage from "@/pages/DashboardPage";
 
 function AppShellWithData() {
-  const { selectedRestaurant } = useRestaurantContext();
+  const { restaurants, selectedRestaurantIds } = useRestaurantContext();
 
-  if (!selectedRestaurant) {
+  if (restaurants.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-base">
         <StatusTag variant="warning">No restaurants found.</StatusTag>
@@ -22,28 +22,33 @@ function AppShellWithData() {
     );
   }
 
+  // Campaign generation stays single-location (brand voice + copy are
+  // generated per-restaurant) — it always scopes to the first selected
+  // restaurant and disables itself when more than one is selected.
+  const primaryRestaurantId = selectedRestaurantIds[0];
+  const isMultipleSelected = selectedRestaurantIds.length > 1;
+  // `key` forces a remount on selection change — otherwise each page's own
+  // state (chat history, campaign draft) would persist across restaurants
+  // instead of resetting, since only the restaurantIds prop would change
+  // on an existing instance.
+  const selectionKey = selectedRestaurantIds.join(",");
+
   return (
     <AppShell
-      // `key` forces a remount on restaurant switch — otherwise each
-      // page's own state (chat history, campaign draft) would persist
-      // across restaurants instead of resetting, since only the
-      // restaurantId prop would change on an existing instance.
       chatPanel={
-        <ChatPage
-          key={selectedRestaurant.id}
-          restaurantId={selectedRestaurant.id}
-        />
+        <ChatPage key={selectionKey} restaurantIds={selectedRestaurantIds} />
       }
       campaignsPanel={
         <CampaignsPanel
-          key={selectedRestaurant.id}
-          restaurantId={selectedRestaurant.id}
+          key={primaryRestaurantId}
+          restaurantId={primaryRestaurantId}
+          isMultipleSelected={isMultipleSelected}
         />
       }
       dashboardPanel={
         <DashboardPage
-          key={selectedRestaurant.id}
-          restaurantId={selectedRestaurant.id}
+          key={selectionKey}
+          restaurantIds={selectedRestaurantIds}
         />
       }
     />

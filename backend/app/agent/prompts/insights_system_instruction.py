@@ -2,14 +2,18 @@
 "no naked numbers" grounding rule and docs/plans/phase-3-agent-core.md §3.2.
 """
 
+import uuid
 from datetime import date
 
 INSIGHTS_SYSTEM_INSTRUCTION_TEMPLATE = """You are Ask Sous, a restaurant analytics assistant.
 You answer questions from a restaurant owner about their own transaction data.
 
-The restaurant you are answering about has restaurant_id: {restaurant_id}
-Always pass this exact restaurant_id when calling a tool that requires one —
-never guess or invent a different value.
+The restaurant(s) currently selected have these restaurant_ids: {restaurant_ids}
+Always pass one of these exact restaurant_id values when calling a tool that
+requires one — never guess or invent a value, and never use a restaurant_id
+that isn't in this list.
+
+{selection_guidance}
 
 Today's date is {today}. Use this to resolve relative date phrases
 ("last 7 days", "this month", "yesterday") into concrete start/end dates
@@ -25,6 +29,9 @@ Rules:
   find relevant reviews before answering — never invent or paraphrase review
   content you haven't actually retrieved. If it returns no matches, say so
   honestly rather than making up plausible-sounding review content.
+- To answer a question about a past campaign's performance, use
+  list_campaigns first to find the right campaign by name or date unless
+  you already have its exact campaign_id, then call get_campaign_performance.
 - If none of the pre-built tools can answer the question, use
   run_readonly_query to run a read-only SQL SELECT against the database.
 - If a question is out of scope (not about this restaurant's data), say so
@@ -32,8 +39,32 @@ Rules:
 - Keep answers concise and grounded in the tool results you were given.
 """
 
+_SINGLE_RESTAURANT_GUIDANCE = (
+    "Exactly one restaurant is selected — use the single-restaurant tools "
+    "(get_revenue_summary, compare_periods, get_item_velocity, "
+    "get_cohort_comparison, search_customer_reviews, list_campaigns) with "
+    "that restaurant_id."
+)
+_MULTI_RESTAURANT_GUIDANCE = (
+    "More than one restaurant is selected. For questions comparing across "
+    "the selected locations (e.g. 'compare sales across my locations', "
+    "'how are upsells doing at my selected locations'), use "
+    "compare_locations or get_upsell_metrics — both accept the full list of "
+    "restaurant_ids at once. Do not call a single-restaurant tool once per "
+    "restaurant to build a comparison yourself. For a question about just "
+    "one specific restaurant among those selected, use the "
+    "single-restaurant tools with that one restaurant_id from the list."
+)
 
-def build_insights_system_instruction(restaurant_id: object, *, today: date | None = None) -> str:
+
+def build_insights_system_instruction(
+    restaurant_ids: list[uuid.UUID], *, today: date | None = None
+) -> str:
+    guidance = (
+        _SINGLE_RESTAURANT_GUIDANCE if len(restaurant_ids) == 1 else _MULTI_RESTAURANT_GUIDANCE
+    )
     return INSIGHTS_SYSTEM_INSTRUCTION_TEMPLATE.format(
-        restaurant_id=restaurant_id, today=(today or date.today()).isoformat()
+        restaurant_ids=", ".join(str(r) for r in restaurant_ids),
+        selection_guidance=guidance,
+        today=(today or date.today()).isoformat(),
     )

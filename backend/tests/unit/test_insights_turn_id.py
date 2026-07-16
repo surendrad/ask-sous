@@ -31,7 +31,7 @@ async def test_all_log_events_in_a_turn_share_the_same_turn_id():
             processors=(structlog.contextvars.merge_contextvars,)
         ) as captured,
     ):
-        await answer_question(_RID, "question")
+        await answer_question([_RID], "question")
 
     turn_ids = {entry["turn_id"] for entry in captured}
     assert len(turn_ids) == 1
@@ -50,7 +50,7 @@ async def test_contextvars_cleared_after_agent_incomplete_error():
 
     with patch("app.agent.insights.GeminiClient", return_value=mock_client):
         with pytest.raises(AgentIncompleteError):
-            await answer_question(_RID, "question")
+            await answer_question([_RID], "question")
 
     logger = structlog.get_logger()
     with structlog.testing.capture_logs(

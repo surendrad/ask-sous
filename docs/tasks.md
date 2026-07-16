@@ -515,3 +515,59 @@ Status indicators: ⬜ Not Started · 🟧 In Progress · 🟩 Done · 🟥 Bloc
 - 🟩 Re-verify real qualitative search now returns genuinely relevant reviews
 - 🟩 Update `docs/reference/seed-patterns.md` (embedding-state note, current row counts) and `docs/changelog.md`
 - 🟩 Full backend suite passing (246 tests)
+
+## Phase 8: Multi-Location Comparison, Campaign Performance, Upsell Measurement
+
+### 8.1 Schema changes
+
+- 🟩 Write failing integration test for the new columns
+- 🟩 Write migration, update `models.py` (`MenuItem.is_upsell`, `Transaction.campaign_id`)
+- 🟩 Run migration, confirm test passes
+
+### 8.2 Seed data: upsell items + campaign attribution
+
+- 🟩 Write failing unit tests for upsell item flagging/pricing and attach-rate
+- 🟩 Implement `UPSELL_ITEM_POOLS`, `ADDON_PRICE_RANGE`, wire into `generate_menu_items()`
+- 🟩 Implement upsell-attachment step in `generate_transactions_and_items()`
+- 🟩 Write failing unit tests for campaign attribution
+- 🟩 Implement attribution function, wire into `seed.py`
+- 🟩 Re-seed, verify attribution, update `seed-patterns.md`
+
+### 8.3 New aggregation tools
+
+- 🟩 `compare_locations()` — tests + implementation
+- 🟩 `list_campaigns()` — tests + implementation
+- 🟩 `get_campaign_performance()` — tests + implementation
+- 🟩 `get_upsell_metrics()` — tests + implementation
+
+### 8.4 Wire into the agent: multi-restaurant chat + new tools
+
+- 🟩 Update system instruction for restaurant_ids list + four new tools
+- 🟩 Update `insights.py` (`answer_question`/`answer_question_stream` → `restaurant_ids`)
+- 🟩 Update `tool_registry.py` (four new tool declarations + dispatch)
+- 🟩 Update `chat.py` (`ChatRequest.restaurant_ids`)
+
+### 8.5 Dashboard: multi-location comparison view
+
+- 🟩 Update `dashboard.py` (`restaurant_ids`, per-location array response, upsell-attach-rate row)
+- 🟩 Update `api.ts`'s `getDashboard()`
+- 🟩 Update `DashboardPage.tsx` for comparison-mode rendering
+
+### 8.6 Frontend: multi-select restaurant switcher
+
+- 🟩 Update `restaurant-context.tsx` (`selectedRestaurantIds`)
+- 🟩 Update `RestaurantSwitcher.tsx` (checkbox multi-select)
+- 🟩 Update `streamChat()`/`ChatPage.tsx` for `restaurant_ids`
+- 🟩 Update `App.tsx`/`CampaignsPanel.tsx` for single-vs-multi selection split
+
+### 8.X Testing (cross-cutting)
+
+- 🟩 Full-suite pass (backend + frontend), no regressions (279 backend + 54 frontend)
+- 🟩 Lint clean (backend + frontend)
+- 🟩 Manual verification pass, including a real live-model pass for all three new question types (found and fixed one real bug — see `docs/changelog.md`'s Phase 8 entry and ADR-015)
+
+### 8.Y Documentation
+
+- 🟩 ADR: campaign attribution mechanism (`docs/decisions/014-campaign-attribution-mechanism.md`)
+- 🟩 ADR: multi-restaurant chat design (`docs/decisions/015-multi-restaurant-chat-design.md`)
+- 🟩 Update `docs/uat.md`, `docs/changelog.md`, `CLAUDE.md`, `docs/reference/seed-patterns.md`

@@ -29,7 +29,7 @@ async def test_full_turn_emits_all_five_structured_events():
             processors=(structlog.contextvars.merge_contextvars,)
         ) as captured,
     ):
-        await answer_question(_RID, "what was my revenue?")
+        await answer_question([_RID], "what was my revenue?")
 
     events = [entry["event"] for entry in captured]
     assert events.count("agent_turn_started") == 1
@@ -40,7 +40,7 @@ async def test_full_turn_emits_all_five_structured_events():
 
     started = next(e for e in captured if e["event"] == "agent_turn_started")
     assert started["question"] == "what was my revenue?"
-    assert started["restaurant_id"] == str(_RID)
+    assert started["restaurant_ids"] == [str(_RID)]
 
     requested = next(e for e in captured if e["event"] == "tool_call_requested")
     assert requested["tool_name"] == "get_revenue_summary"
@@ -109,7 +109,7 @@ async def test_tool_call_requested_logs_parsed_args_not_raw_model_json():
             processors=(structlog.contextvars.merge_contextvars,)
         ) as captured,
     ):
-        await answer_question(_RID, "what was my revenue?")
+        await answer_question([_RID], "what was my revenue?")
 
     requested = next(e for e in captured if e["event"] == "tool_call_requested")
     # Parsed via _to_jsonable(): the UUID is stringified, not left as-is.

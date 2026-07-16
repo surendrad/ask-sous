@@ -486,3 +486,70 @@ Status indicators: ⬜ Not Started · ✅ Passed · ❌ Failed
 - The KPIs, revenue trend, and top items all update to reflect the newly-selected restaurant's data — the same restaurant-scoping behavior as chat and campaigns.
 
 **Note on "Not Started" status:** all four Phase 7 UATs remain formally Not Started — these are conducted by the user in production, not signed off during implementation. This phase's own manual verification pass (a short synthetic `run_trickle_loop()` run confirming real inserts, and a single Playwright browser check of the dashboard for one restaurant) exercised the *mechanics* UAT-7.1 and UAT-7.3 describe closely enough to catch two real bugs, but did not walk the full UAT steps as written (e.g. UAT-7.1's ~1-minute organic wait with `ENABLE_TRICKLE=true` in `.env`, UAT-7.2's multi-minute disabled-state check, or UAT-7.4's specific switch-and-verify flow) — see `docs/changelog.md`'s Phase 7 entry for exactly what was and wasn't checked.
+
+## Phase 8: Multi-Location Comparison, Campaign Performance, Upsell Measurement (post-MVP)
+
+### UAT-8.1: Owner selects multiple locations and sees a correct comparison on the dashboard
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. Open the app, click the restaurant switcher, check the boxes for 2–3 restaurants (or use "Select all").
+2. Click the Dashboard nav item.
+
+**Expected:**
+
+- A combined comparison table appears (not the single-restaurant KPI-cards-plus-charts layout) with one row per selected restaurant — restaurant name, revenue, transaction count, average ticket, upsell attach rate, and a small revenue sparkline — plus a totals row summing revenue and transaction count across the selection. Switching back to a single restaurant returns to the original KPI-card layout.
+
+### UAT-8.2: Owner asks chat to compare locations and gets a grounded, correct comparison answer
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. With 2+ restaurants selected in the switcher, open Chat and ask "How do my selected locations compare on revenue?"
+
+**Expected:**
+
+- The answer states real revenue figures for each selected location (matching the dashboard's numbers for the same window), not a single-restaurant answer or a refusal. The tool-call chip shows `compare_locations` was called, not repeated single-restaurant tool calls.
+
+### UAT-8.3: Owner asks chat about a specific past campaign's performance and gets a grounded answer referencing real attributed data
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. Select a single restaurant. Open Chat and ask "How did my last campaign perform?" or name a specific campaign if known.
+
+**Expected:**
+
+- The answer references a real campaign (name/channel), states attributed revenue/transaction count, and compares it against a baseline — all grounded in real numbers, not invented. The tool-call chips show `list_campaigns` followed by `get_campaign_performance`.
+
+### UAT-8.4: Owner asks about upsell performance for selected locations and gets a grounded, correct attach-rate/revenue answer
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. With one or more restaurants selected, open Chat and ask "How are upsells doing at my selected locations?"
+
+**Expected:**
+
+- The answer states a real attach rate (roughly 15–35%, matching the seeded pattern) and upsell revenue, for each selected location. The tool-call chip shows `get_upsell_metrics`.
+
+### UAT-8.5: Campaigns panel correctly requires exactly one location selected before allowing generation
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. Select 2+ restaurants in the switcher, then click the Campaigns nav item.
+2. Type a brief and try to click Generate.
+3. Narrow the selection back down to exactly one restaurant.
+
+**Expected:**
+
+- With multiple restaurants selected, the Generate button is disabled and a message explains that exactly one location must be selected to generate a campaign — clicking it does nothing. Once narrowed to one restaurant, Generate becomes enabled and works normally, scoped to that restaurant's brand voice.
+
+**Note on "Not Started" status:** as with every prior phase, these UATs are conducted by the user in production, not signed off during implementation. This phase's own verification consisted of the full automated test suite (278 backend / 54 frontend tests, all passing) plus manual `curl`/browser spot-checks of the new endpoints and UI during development — not a full walk of the UAT steps as written above. See `docs/changelog.md`'s Phase 8 entry for exactly what was checked.

@@ -115,3 +115,59 @@ def test_search_customer_reviews_parse_args_invalid_restaurant_id_raises():
         TOOL_DISPATCH["search_customer_reviews"].parse_args(
             {"restaurant_id": "not-a-uuid", "query": "service quality"}
         )
+
+
+_RID2 = "87654321-4321-8765-4321-876543218765"
+_CID = "11111111-2222-3333-4444-555555555555"
+
+
+def test_compare_locations_parse_args_valid():
+    parsed = TOOL_DISPATCH["compare_locations"].parse_args(
+        {
+            "restaurant_ids": [_RID, _RID2],
+            "start_date": "2026-01-01",
+            "end_date": "2026-01-31",
+        }
+    )
+    assert parsed == {
+        "restaurant_ids": [uuid.UUID(_RID), uuid.UUID(_RID2)],
+        "start_date": date(2026, 1, 1),
+        "end_date": date(2026, 1, 31),
+    }
+
+
+def test_compare_locations_parse_args_invalid_id_in_list_raises():
+    with pytest.raises(ValueError):
+        TOOL_DISPATCH["compare_locations"].parse_args(
+            {
+                "restaurant_ids": [_RID, "not-a-uuid"],
+                "start_date": "2026-01-01",
+                "end_date": "2026-01-31",
+            }
+        )
+
+
+def test_list_campaigns_parse_args_valid():
+    parsed = TOOL_DISPATCH["list_campaigns"].parse_args({"restaurant_id": _RID})
+    assert parsed == {"restaurant_id": uuid.UUID(_RID)}
+
+
+def test_get_campaign_performance_parse_args_valid():
+    parsed = TOOL_DISPATCH["get_campaign_performance"].parse_args({"campaign_id": _CID})
+    assert parsed == {"campaign_id": uuid.UUID(_CID)}
+
+
+def test_get_campaign_performance_parse_args_invalid_raises():
+    with pytest.raises(ValueError):
+        TOOL_DISPATCH["get_campaign_performance"].parse_args({"campaign_id": "not-a-uuid"})
+
+
+def test_get_upsell_metrics_parse_args_valid():
+    parsed = TOOL_DISPATCH["get_upsell_metrics"].parse_args(
+        {
+            "restaurant_ids": [_RID],
+            "start_date": "2026-01-01",
+            "end_date": "2026-01-31",
+        }
+    )
+    assert parsed["restaurant_ids"] == [uuid.UUID(_RID)]

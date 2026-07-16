@@ -40,7 +40,7 @@ describe("streamChat", () => {
     const onDone = vi.fn();
     const onError = vi.fn();
 
-    await streamChat("rid-1", "hi", { onChunk, onDone, onError });
+    await streamChat(["rid-1"], "hi", { onChunk, onDone, onError });
 
     expect(onChunk.mock.calls).toEqual([["Hello "], ["there."]]);
     expect(onDone).toHaveBeenCalledWith({
@@ -49,6 +49,26 @@ describe("streamChat", () => {
       model: "gemini-2.5-flash",
     });
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("sends restaurant_ids as a list in the request body", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      sseStreamResponse([
+        `data: ${JSON.stringify({ type: "done", answer: "ok", tool_calls: [], model: "gemini-2.5-flash" })}\n\n`,
+      ]),
+    );
+
+    await streamChat(["rid-1", "rid-2"], "hi", {
+      onChunk: vi.fn(),
+      onDone: vi.fn(),
+      onError: vi.fn(),
+    });
+
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    expect(JSON.parse(init?.body as string)).toEqual({
+      restaurant_ids: ["rid-1", "rid-2"],
+      question: "hi",
+    });
   });
 
   it("calls onError for an error-type SSE event and stops", async () => {
@@ -62,7 +82,7 @@ describe("streamChat", () => {
     const onDone = vi.fn();
     const onError = vi.fn();
 
-    await streamChat("rid-1", "hi", { onChunk, onDone, onError });
+    await streamChat(["rid-1"], "hi", { onChunk, onDone, onError });
 
     expect(onChunk).toHaveBeenCalledWith("Partial");
     expect(onError).toHaveBeenCalledWith({
@@ -90,7 +110,7 @@ describe("streamChat", () => {
     const onDone = vi.fn();
     const onError = vi.fn();
 
-    await streamChat("rid-1", "hi", { onChunk, onDone, onError });
+    await streamChat(["rid-1"], "hi", { onChunk, onDone, onError });
 
     expect(onError).toHaveBeenCalledWith({
       message: "down",
@@ -123,7 +143,7 @@ describe("streamChat", () => {
     );
 
     const onChunk = vi.fn();
-    await streamChat("rid-1", "hi", {
+    await streamChat(["rid-1"], "hi", {
       onChunk,
       onDone: vi.fn(),
       onError: vi.fn(),
@@ -141,7 +161,7 @@ describe("streamChat", () => {
     const onDone = vi.fn();
     const onError = vi.fn();
 
-    await streamChat("rid-1", "hi", { onChunk: vi.fn(), onDone, onError });
+    await streamChat(["rid-1"], "hi", { onChunk: vi.fn(), onDone, onError });
 
     expect(onError).toHaveBeenCalledWith({
       message: "Failed to reach the backend.",
@@ -226,12 +246,24 @@ describe("getDashboard", () => {
       new Response(
         JSON.stringify({
           data: {
-            kpis: {
+            locations: [
+              {
+                restaurant_id: "rid-1",
+                restaurant_name: "Golden Skillet",
+                kpis: {
+                  total_revenue: "500.00",
+                  transaction_count: 10,
+                  average_ticket: "50.00",
+                },
+                revenue_trend: [{ day: "2026-07-10", revenue: "100.00" }],
+                upsell_attach_rate: "0.2",
+              },
+            ],
+            totals: {
               total_revenue: "500.00",
               transaction_count: 10,
               average_ticket: "50.00",
             },
-            revenue_trend: [{ day: "2026-07-10", revenue: "100.00" }],
             top_items: [
               { menu_item_name: "Truffle Fries", total_quantity: 42 },
             ],
@@ -242,13 +274,39 @@ describe("getDashboard", () => {
       ),
     );
 
-    const result = await getDashboard("rid-1");
+    const result = await getDashboard(["rid-1"]);
 
-    expect(result.kpis.total_revenue).toBe("500.00");
-    expect(result.revenue_trend[0].day).toBe("2026-07-10");
-    expect(result.top_items[0].menu_item_name).toBe("Truffle Fries");
+    expect(result.locations[0].kpis.total_revenue).toBe("500.00");
+    expect(result.locations[0].revenue_trend[0].day).toBe("2026-07-10");
+    expect(result.top_items?.[0].menu_item_name).toBe("Truffle Fries");
     expect(vi.mocked(fetch).mock.calls[0][0]).toContain(
-      "/dashboard?restaurant_id=rid-1",
+      "/dashboard?restaurant_ids=rid-1",
+    );
+  });
+
+  it("encodes multiple restaurant_ids as repeated query params", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            locations: [],
+            totals: {
+              total_revenue: "0",
+              transaction_count: 0,
+              average_ticket: "0",
+            },
+            top_items: null,
+          },
+          error: null,
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await getDashboard(["rid-1", "rid-2"]);
+
+    expect(vi.mocked(fetch).mock.calls[0][0]).toContain(
+      "/dashboard?restaurant_ids=rid-1&restaurant_ids=rid-2",
     );
   });
 });
