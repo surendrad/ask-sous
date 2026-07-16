@@ -22,5 +22,9 @@ coverage/
 # OS
 .DS_Store
 
-# Local tool state (not project source)
-.claude/
+# Local tool state (not project source) — but project-level skills under
+# .claude/skills/ are shared, versioned project source (see setup/SKILL.md),
+# so they're carved out of this ignore rule rather than excluded wholesale.
+.claude/*
+!.claude/skills/
+!.claude/skills/**
