@@ -10,6 +10,7 @@ docs/plans/phase-3-agent-core.md §3.2.
 import asyncio
 import re
 import uuid
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -23,6 +24,7 @@ from app.agent.llm_client import (
     FinalAnswer,
     GeminiClient,
     ModelToolCalls,
+    TextChunk,
     ToolCallRequest,
     ToolResult,
     ToolResultsTurn,
@@ -101,6 +103,33 @@ async def _run_tool_call(tool_call: ToolCallRequest) -> tuple[ToolCallRecord, To
     return record, result
 
 
+async def _resolve_tool_call_round(
+    calls: list[ToolCallRequest],
+    history: list[ConversationEntry],
+    tool_calls: list[ToolCallRecord],
+) -> None:
+    """Shared by answer_question() and answer_question_stream(): dispatches
+    a round's tool calls concurrently, logs each request/result, and
+    appends both the model's tool-call turn and the results turn to
+    history — mutates `history`/`tool_calls` in place since both callers
+    already own and thread those through their own loops."""
+    history.append(ModelToolCalls(calls=calls))
+
+    # Independent tool calls within a round run concurrently — each hits
+    # its own DB query, so there's no reason to serialize them.
+    records = await asyncio.gather(*(_run_tool_call(tc) for tc in calls))
+    results: list[ToolResult] = []
+    for record, result in records:
+        logger.info("tool_call_requested", tool_name=record.tool_name, arguments=record.arguments)
+        tool_calls.append(record)
+        results.append(result)
+        logger.info(
+            "tool_call_result", tool_name=record.tool_name, result=record.result, error=record.error
+        )
+
+    history.append(ToolResultsTurn(results=results))
+
+
 async def answer_question(restaurant_id: uuid.UUID, question: str) -> AgentTurnResult:
     structlog.contextvars.bind_contextvars(
         turn_id=str(uuid.uuid4()), restaurant_id=str(restaurant_id)
@@ -132,26 +161,80 @@ async def answer_question(restaurant_id: uuid.UUID, question: str) -> AgentTurnR
                 )
                 return AgentTurnResult(answer=turn_output.text, tool_calls=tool_calls, model=model)
 
-            history.append(ModelToolCalls(calls=turn_output))
+            await _resolve_tool_call_round(turn_output, history, tool_calls)
 
-            # Independent tool calls within a round run concurrently — each
-            # hits its own DB query, so there's no reason to serialize them.
-            records = await asyncio.gather(*(_run_tool_call(tc) for tc in turn_output))
-            results: list[ToolResult] = []
-            for record, result in records:
-                logger.info(
-                    "tool_call_requested", tool_name=record.tool_name, arguments=record.arguments
-                )
-                tool_calls.append(record)
-                results.append(result)
-                logger.info(
-                    "tool_call_result",
-                    tool_name=record.tool_name,
-                    result=record.result,
-                    error=record.error,
-                )
+        raise AgentIncompleteError(
+            f"Agent did not reach a final answer within {MAX_TOOL_CALL_ROUNDS} rounds."
+        )
+    finally:
+        structlog.contextvars.clear_contextvars()
 
-            history.append(ToolResultsTurn(results=results))
+
+@dataclass(frozen=True)
+class AgentTurnComplete:
+    """Terminal event of answer_question_stream() — carries the same
+    AgentTurnResult answer_question() returns directly, so the caller can
+    log/serve the full assembled response after the stream completes (the
+    Risk Register's mitigation for streamed audit logging)."""
+
+    result: AgentTurnResult
+
+
+async def answer_question_stream(
+    restaurant_id: uuid.UUID, question: str
+) -> AsyncIterator[TextChunk | AgentTurnComplete]:
+    """Same orchestration as answer_question() — model routing, tool
+    dispatch, grounding check, audit logging — but yields TextChunk events
+    as a final-answer round's text arrives instead of returning once,
+    terminating with a single AgentTurnComplete."""
+    structlog.contextvars.bind_contextvars(
+        turn_id=str(uuid.uuid4()), restaurant_id=str(restaurant_id)
+    )
+    try:
+        logger.info("agent_turn_started", question=question, restaurant_id=str(restaurant_id))
+        client = GeminiClient()
+        system_instruction = build_insights_system_instruction(restaurant_id)
+        history: list[ConversationEntry] = [UserText(question)]
+        tool_calls: list[ToolCallRecord] = []
+
+        for round_index in range(MAX_TOOL_CALL_ROUNDS):
+            model, routing_reason = _select_model(question, completed_tool_call_rounds=round_index)
+            round_result: FinalAnswer | ModelToolCalls | None = None
+            async for event in client.generate_turn_stream(
+                history=history,
+                tools=INSIGHTS_TOOLS,
+                system_instruction=system_instruction,
+                model=model,
+            ):
+                if isinstance(event, TextChunk):
+                    yield event
+                else:
+                    round_result = event
+            logger.info("agent_turn_model_selected", model=model, routing_reason=routing_reason)
+
+            if isinstance(round_result, FinalAnswer):
+                if not _check_grounding(round_result.text, tool_calls):
+                    logger.warning("possible_ungrounded_numeric_answer", answer=round_result.text)
+                logger.info(
+                    "agent_turn_completed",
+                    answer=round_result.text,
+                    tool_call_count=len(tool_calls),
+                )
+                yield AgentTurnComplete(
+                    AgentTurnResult(answer=round_result.text, tool_calls=tool_calls, model=model)
+                )
+                return
+
+            if not isinstance(round_result, ModelToolCalls):
+                # generate_turn_stream() always terminates a round with
+                # exactly one of FinalAnswer/ModelToolCalls — anything else
+                # is an SDK/adapter contract violation, not a recoverable
+                # runtime state.
+                raise RuntimeError(
+                    "generate_turn_stream() ended a round without a terminal event: "
+                    f"{round_result!r}"
+                )
+            await _resolve_tool_call_round(round_result.calls, history, tool_calls)
 
         raise AgentIncompleteError(
             f"Agent did not reach a final answer within {MAX_TOOL_CALL_ROUNDS} rounds."

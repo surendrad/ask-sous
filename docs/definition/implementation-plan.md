@@ -177,6 +177,8 @@ The **MVP is Phases 0–6**: foundation through a working frontend covering both
 
 ## Phase 6: Frontend (MVP completion)
 
+**Status:** ✅ Buildable and tested (2026-07-16). Plan: `docs/plans/phase-6-frontend.md`. See `docs/changelog.md` for what shipped. Verified against a real running backend + seeded database via Playwright MCP (not just mocks — a departure from Phases 3–5, since this phase's core work doesn't require live Vertex AI credentials to exercise meaningfully). **Live-credentials gap** (same caveat as every prior phase): the real streaming feel and a genuine mid-stream failure both remain unverified against a live model until `docs/reference/gcp-setup.md` is completed — see UAT-6.1/6.4. **Known scope trade-off:** this section's own "Playwright E2E smoke tests" requirement was descoped to a manual Playwright-MCP pass instead of committed automated tests — acknowledged explicitly in `docs/changelog.md` and `docs/uat.md`, not silently dropped.
+
 **Goal:** The demoable product — everything built so far, wrapped in a real UI.
 
 ### 6.1 Chat interface

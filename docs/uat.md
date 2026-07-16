@@ -364,3 +364,70 @@ Status indicators: ⬜ Not Started · ✅ Passed · ❌ Failed
 **Expected:**
 
 - The very first `agent_turn_model_selected` event for the turn (round 0, before any tool call) already shows `model=gemini-2.5-pro`/`routing_reason=keyword`, not just a later one.
+
+## Phase 6: Frontend
+
+### UAT-6.1: Owner asks a question and watches the answer stream in, with citation chips appearing after
+
+**Status:** ⬜ Not Started (real streaming feel requires live Vertex AI credentials — completable now against mocked/fixture streams, per `docs/decisions/011`)
+
+**Steps:**
+
+1. Open the app, confirm a restaurant is selected by default, and ask a question in the chat panel.
+
+**Expected:**
+
+- A thinking indicator appears immediately; the answer's text appears incrementally (not all at once) as it streams in, with a blinking cursor while still streaming; once complete, citation chips appear beneath the answer for every tool call the turn made.
+
+### UAT-6.2: Owner switches restaurants and sees chat/campaigns scope change accordingly
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. Ask a question and generate a campaign draft for the first restaurant in the switcher.
+2. Switch to a different restaurant via the sidebar dropdown.
+
+**Expected:**
+
+- Both the chat history and the campaign draft from the first restaurant are cleared — the new restaurant starts with empty chat and an empty-state campaigns panel, not stale content from the previous restaurant.
+
+### UAT-6.3: Owner generates a campaign draft, regenerates it, and copies it
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. In the campaigns panel, enter a brief and click Generate.
+2. Click Regenerate on the resulting draft.
+3. Click Copy.
+
+**Expected:**
+
+- A campaign draft card appears after Generate; Regenerate replaces it with a new draft (same brief, a fresh call); Copy writes the current draft's text to the clipboard (the button label briefly confirms "Copied").
+
+### UAT-6.4: A backend outage mid-stream surfaces a clear error in the chat UI rather than a silent hang
+
+**Status:** ⬜ Not Started (requires live credentials or a forced failure injection to observe the real mid-stream path — see `docs/decisions/011`)
+
+**Steps:**
+
+1. Ask a question, and simulate a mid-turn Vertex AI failure (or observe one naturally under real usage) after some answer text has already streamed in.
+
+**Expected:**
+
+- The partially-streamed text remains visible (not erased); an error message appears; the UI does not hang in a permanent "thinking"/streaming state.
+
+### UAT-6.5: The app is usable on a mobile-width viewport
+
+**Status:** ⬜ Not Started
+
+**Steps:**
+
+1. Resize the browser (or use device emulation) to a mobile width (<768px).
+
+**Expected:**
+
+- The sidebar collapses to a bottom tab bar (Chat / Campaigns / Dashboard); only one of the Chat/Campaigns panels is visible at a time, switching via the tab bar; all text and controls remain legible and reachable without horizontal scrolling.
+
+**Known gap, tracked openly rather than silently skipped:** implementation-plan.md's Phase 6 Testing section calls for automated Playwright E2E smoke tests as "the first phase with a real UI to drive." This phase instead used a manual Playwright-MCP browser pass against the real running backend + seeded database (see `docs/tasks.md`'s 6.4 entry for what was actually exercised, including the bug it caught) — no Playwright test files or config were committed. This is a deliberate scope trade-off under this implementation session's time constraints, not an oversight: setting up a real Playwright test harness (browser install, CI wiring, fixture data lifecycle) is itself nontrivial work. Revisit if/when this project moves toward the kind of repeated-regression-testing need automated E2E coverage is for.

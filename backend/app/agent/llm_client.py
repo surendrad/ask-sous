@@ -11,6 +11,8 @@ See docs/decisions/007-gemini-model-selection-and-client-adapter.md.
 """
 
 import asyncio
+import threading
+from collections.abc import AsyncIterator, Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -28,6 +30,33 @@ FLASH_MODEL = "gemini-2.5-flash"
 PRO_MODEL = "gemini-2.5-pro"
 
 
+async def _iter_in_thread[T](sync_iterable: Iterable[T]) -> AsyncIterator[T]:
+    """Bridges a blocking/synchronous iterator (the SDK's streaming call
+    returns one, not an async iterator) onto the event loop: a background
+    thread pulls items and pushes them onto an asyncio.Queue, which this
+    generator drains. A raised exception is pushed onto the queue too and
+    re-raised on the consumer side, rather than crashing the worker thread
+    silently."""
+    queue: asyncio.Queue[Any] = asyncio.Queue()
+    loop = asyncio.get_running_loop()
+    done = object()
+
+    def worker() -> None:
+        try:
+            for item in sync_iterable:
+                loop.call_soon_threadsafe(queue.put_nowait, item)
+        except Exception as exc:  # noqa: BLE001 - re-raised on the consumer side below
+            loop.call_soon_threadsafe(queue.put_nowait, exc)
+        finally:
+            loop.call_soon_threadsafe(queue.put_nowait, done)
+
+    threading.Thread(target=worker, daemon=True).start()
+    while (item := await queue.get()) is not done:
+        if isinstance(item, Exception):
+            raise item
+        yield item
+
+
 @dataclass(frozen=True)
 class ToolCallRequest:
     name: str
@@ -36,6 +65,13 @@ class ToolCallRequest:
 
 @dataclass(frozen=True)
 class FinalAnswer:
+    text: str
+
+
+@dataclass(frozen=True)
+class TextChunk:
+    """One piece of a streamed final answer — see GeminiClient.generate_turn_stream()."""
+
     text: str
 
 
@@ -159,3 +195,53 @@ class GeminiClient:
 
         text = "".join(part.text or "" for part in parts if part.text is not None)
         return FinalAnswer(text=text)
+
+    async def generate_turn_stream(
+        self,
+        *,
+        history: list[ConversationEntry],
+        tools: list[ToolDeclaration],
+        system_instruction: str | None = None,
+        model: str = FLASH_MODEL,
+    ) -> AsyncIterator[TextChunk | FinalAnswer | ModelToolCalls]:
+        """Same round semantics as generate_turn(), but yields TextChunk
+        events as a final-answer round's text arrives, instead of waiting
+        for the whole response. Terminates with exactly one ModelToolCalls
+        (a tool-calling round — no text was ever streamed for it) or one
+        FinalAnswer (the concatenation of every TextChunk already yielded)."""
+        contents = [_entry_to_content(entry) for entry in history]
+        config = types.GenerateContentConfig(
+            tools=[types.Tool(function_declarations=[_to_function_declaration(t) for t in tools])],
+            system_instruction=system_instruction,
+        )
+        try:
+            stream = await asyncio.to_thread(
+                self._client.models.generate_content_stream,
+                model=model,
+                contents=contents,
+                config=config,
+            )
+
+            tool_calls: list[ToolCallRequest] = []
+            text_parts: list[str] = []
+            async for chunk in _iter_in_thread(stream):
+                parts = chunk.candidates[0].content.parts
+                tool_calls.extend(
+                    ToolCallRequest(
+                        name=p.function_call.name, args=dict(p.function_call.args or {})
+                    )
+                    for p in parts
+                    if p.function_call is not None
+                )
+                chunk_text = "".join(p.text or "" for p in parts if p.text is not None)
+                if chunk_text:
+                    text_parts.append(chunk_text)
+                    yield TextChunk(text=chunk_text)
+        except (errors.APIError, errors.ClientError, errors.ServerError, GoogleAuthError) as exc:
+            logger.error("gemini_call_failed", exc_info=exc)
+            raise AgentUnavailableError("The agent is temporarily unavailable.") from exc
+
+        if tool_calls:
+            yield ModelToolCalls(calls=tool_calls)
+        else:
+            yield FinalAnswer(text="".join(text_parts))

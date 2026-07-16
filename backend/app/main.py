@@ -3,7 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.agent.exceptions import AgentIncompleteError, AgentUnavailableError
-from app.api import campaigns, chat, health
+from app.api import campaigns, chat, health, restaurants
 from app.core.errors import (
     agent_incomplete_exception_handler,
     agent_unavailable_exception_handler,
@@ -19,9 +19,12 @@ app = FastAPI(title="Ask Sous")
 # Local-dev-only origins — the Vite dev server runs on a different port than
 # the API, so the browser enforces CORS between them. No user accounts exist
 # (master-plan.md §2), so this isn't gating access to anything sensitive.
+# Vite auto-increments past 5173 if that port is already taken (e.g. by
+# another project's dev server on the same machine), so a small fixed range
+# is allowed rather than a single hardcoded port.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[f"http://localhost:{port}" for port in range(5173, 5176)],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -29,6 +32,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(chat.router)
 app.include_router(campaigns.router)
+app.include_router(restaurants.router)
 
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(AgentUnavailableError, agent_unavailable_exception_handler)

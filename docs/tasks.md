@@ -396,3 +396,65 @@ Status indicators: ⬜ Not Started · 🟧 In Progress · 🟩 Done · 🟥 Bloc
 - 🟩 Update `CLAUDE.md` (new `/campaigns` endpoint, `restaurant_lookup.py`, routing heuristic summary, corrected stale `routing.py` reference)
 - 🟩 Update `docs/definition/implementation-plan.md` to mark Phase 5 status
 - 🟩 Update `.env.example` if new env vars are introduced (none needed — confirmed)
+
+## Phase 6: Frontend
+
+### 6.0 Backend: real streaming for `/chat`
+
+- 🟩 Write failing unit test for `_iter_in_thread()` (order preserved, mid-iteration exception propagates)
+- 🟩 Implement `_iter_in_thread()`
+- 🟩 Write failing unit tests for `GeminiClient.generate_turn_stream()` (text-only chunks, tool-call chunks, mid-stream SDK error)
+- 🟩 Implement `generate_turn_stream()`
+- 🟩 Write failing unit tests for `answer_question_stream()` (single-round streaming, multi-round tool dispatch, round-cap)
+- 🟩 Implement `answer_question_stream()` (factored out shared `_resolve_tool_call_round()` helper with `answer_question()`)
+- 🟩 Write failing integration tests for the SSE `/chat` endpoint (happy path + mid-stream failure)
+- 🟩 Implement the SSE endpoint (also updated 3 pre-existing `/chat` integration tests to the new streaming contract)
+- 🟩 Write failing integration test for `GET /restaurants`
+- 🟩 Implement `GET /restaurants`
+- 🟩 Write `docs/decisions/011-sse-streaming-and-mid-stream-errors.md`
+
+### 6.1 Chat interface
+
+- 🟩 Write failing Vitest test for the SSE-over-fetch parser in `api.ts`
+- 🟩 Implement `streamChat()`
+- 🟩 Write failing RTL tests for `ChatMessage`, `CitationChip`, `ThinkingIndicator`
+- 🟩 Implement those components
+- 🟩 Write failing RTL tests for `ChatPage`
+- 🟩 Implement `ChatPage`
+
+### 6.2 Restaurant switcher
+
+- 🟩 Write failing Vitest test for `getRestaurants()`
+- 🟩 Implement it
+- 🟩 Write failing tests for the restaurant context
+- 🟩 Implement the context
+- 🟩 Write failing RTL tests for `RestaurantSwitcher`
+- 🟩 Implement `RestaurantSwitcher` (native `<select>` instead of a headless dropdown primitive — simpler, fully accessible, far more reliable to test)
+
+### 6.3 Campaigns panel
+
+- 🟩 Write failing Vitest test for `generateCampaign()`
+- 🟩 Implement it
+- 🟩 Write failing RTL tests for `CampaignsPanel`
+- 🟩 Implement `CampaignsPanel`
+
+### 6.4 App shell and design system application
+
+- 🟩 Write failing RTL tests for `AppShell`
+- 🟩 Implement `AppShell` (nav items are in-page view toggles, not router links — no router in this stack; chat/campaigns render together on desktop per the split-view design, nav toggling only matters at the mobile breakpoint)
+- 🟩 Wire `App.tsx` to mount it (restaurants loaded via `useQuery`, loading/error states, `HealthCheckPage` kept but no longer the root)
+- 🟩 Manual pass against `docs/definition/design-system.html` (real browser via Playwright MCP against the live backend/DB — confirmed sidebar/split-view layout, restaurant switcher populated with all 5 seeded restaurants, chat thinking indicator + error banner, campaigns empty state + loading + error states, and the exact "before-first-chunk failure → 503 JSON" path from ADR-011. Found and fixed a real bug: switching restaurants didn't reset `ChatPage`/`CampaignsPanel` state — fixed via a `key={selectedRestaurant.id}` remount in `App.tsx`, with a regression test)
+
+### 6.X Testing (cross-cutting)
+
+- 🟩 Full-suite pass (backend + frontend), no regressions
+- 🟩 `ruff check . && ruff format --check .` (backend), `npm run lint` (frontend)
+- 🟩 Manual verification pass (see plan's Manual Verification checklist — done via Playwright MCP against the real running backend/DB; dark/light OS-preference toggle and mobile-width resize not explicitly exercised, everything else was)
+
+### 6.Y Documentation
+
+- 🟩 Update `docs/uat.md` with UAT-6.1 through UAT-6.5 (plus an explicit note on the Playwright-automation scope trade-off)
+- 🟩 Update `docs/changelog.md` with Phase 6 completion summary
+- 🟩 Write `docs/decisions/011-sse-streaming-and-mid-stream-errors.md`
+- 🟩 Update `CLAUDE.md` (`/restaurants` endpoint, SSE `/chat` contract change, frontend structure, restaurant-switch remount note)
+- 🟩 Update `docs/definition/implementation-plan.md` to mark Phase 6 status

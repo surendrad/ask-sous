@@ -4,7 +4,14 @@ import pytest
 from google.genai import errors, types
 
 from app.agent.exceptions import AgentUnavailableError
-from app.agent.llm_client import FinalAnswer, GeminiClient, ToolCallRequest, UserText
+from app.agent.llm_client import (
+    FinalAnswer,
+    GeminiClient,
+    ModelToolCalls,
+    TextChunk,
+    ToolCallRequest,
+    UserText,
+)
 from app.core.config import Settings
 
 
@@ -78,3 +85,78 @@ async def test_generate_turn_translates_api_error_to_agent_unavailable():
         await client.generate_turn(history=[UserText("hi")], tools=[])
 
     assert exc_info.value.__cause__ is api_error
+
+
+def _text_chunk_response(text: str) -> types.GenerateContentResponse:
+    return types.GenerateContentResponse(
+        candidates=[
+            types.Candidate(content=types.Content(role="model", parts=[types.Part(text=text)]))
+        ]
+    )
+
+
+async def test_generate_turn_stream_yields_text_chunks_then_final_answer():
+    chunks = [
+        _text_chunk_response("Revenue "),
+        _text_chunk_response("was $1,234."),
+    ]
+    client = GeminiClient(settings=_settings())
+    client._client = MagicMock()
+    client._client.models.generate_content_stream = MagicMock(return_value=iter(chunks))
+
+    events = [
+        event
+        async for event in client.generate_turn_stream(
+            history=[UserText("what was my revenue?")], tools=[]
+        )
+    ]
+
+    assert events == [
+        TextChunk(text="Revenue "),
+        TextChunk(text="was $1,234."),
+        FinalAnswer(text="Revenue was $1,234."),
+    ]
+
+
+async def test_generate_turn_stream_yields_no_chunks_for_tool_call_response():
+    function_call = types.FunctionCall(name="get_revenue_summary", args={"restaurant_id": "abc"})
+    chunk = types.GenerateContentResponse(
+        candidates=[
+            types.Candidate(
+                content=types.Content(role="model", parts=[types.Part(function_call=function_call)])
+            )
+        ]
+    )
+    client = GeminiClient(settings=_settings())
+    client._client = MagicMock()
+    client._client.models.generate_content_stream = MagicMock(return_value=iter([chunk]))
+
+    events = [
+        event
+        async for event in client.generate_turn_stream(
+            history=[UserText("what was my revenue?")], tools=[]
+        )
+    ]
+
+    assert events == [
+        ModelToolCalls(
+            calls=[ToolCallRequest(name="get_revenue_summary", args={"restaurant_id": "abc"})]
+        )
+    ]
+
+
+async def test_generate_turn_stream_translates_mid_stream_error_to_agent_unavailable():
+    def failing_stream():
+        yield _text_chunk_response("partial")
+        raise errors.APIError(code=503, response_json={"error": {"message": "unavailable"}})
+
+    client = GeminiClient(settings=_settings())
+    client._client = MagicMock()
+    client._client.models.generate_content_stream = MagicMock(return_value=failing_stream())
+
+    collected = []
+    with pytest.raises(AgentUnavailableError):
+        async for event in client.generate_turn_stream(history=[UserText("hi")], tools=[]):
+            collected.append(event)
+
+    assert collected == [TextChunk(text="partial")]
