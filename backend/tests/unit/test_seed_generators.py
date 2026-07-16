@@ -180,13 +180,87 @@ def test_total_amount_equals_sum_of_line_items():
 def test_generate_reviews_shape():
     rng, faker = make_rng_and_faker(FIXED_SEED)
     rid = _restaurant_id_for("Golden Skillet")
-    reviews = generate_reviews(rng, faker, rid)
+    profile = _profile("Golden Skillet")
+    menu_items = generate_menu_items(rng, rid, "Golden Skillet")
+    reviews = generate_reviews(rng, faker, rid, profile["cuisine"], menu_items)
 
     assert 20 <= len(reviews) <= 40
     for r in reviews:
         assert 1 <= r["rating"] <= 5
         assert r["review_text"]
         assert r["source"] in {"google", "yelp", "walk_in", "in_app"}
+
+
+def test_generate_reviews_text_is_restaurant_domain_content_not_generic_faker_text():
+    # Real semantic search over reviews is only meaningful if the review
+    # text is actually about restaurant topics (service, food, wait times,
+    # price, ambiance) — generic Faker sentence()/paragraph() text is
+    # grammatically plausible but never about anything, so a query like
+    # "what are customers saying about the service?" can never find a
+    # genuinely relevant match. Spot-check for restaurant-domain vocabulary
+    # rather than asserting exact template text, so this stays robust to
+    # template wording changes.
+    rng, faker = make_rng_and_faker(FIXED_SEED)
+    rid = _restaurant_id_for("Golden Skillet")
+    profile = _profile("Golden Skillet")
+    menu_items = generate_menu_items(rng, rid, "Golden Skillet")
+    reviews = generate_reviews(rng, faker, rid, profile["cuisine"], menu_items)
+
+    domain_words = {
+        "service",
+        "server",
+        "staff",
+        "food",
+        "wait",
+        "waited",
+        "price",
+        "priced",
+        "portion",
+        "atmosphere",
+        "flavor",
+        "flavors",
+        "seated",
+        "menu",
+        "dish",
+        "meal",
+    }
+    matching = [
+        r for r in reviews if domain_words & set(r["review_text"].lower().replace(".", "").split())
+    ]
+    # Not every review needs every word, but the large majority should read
+    # as genuinely restaurant-related, not generic filler text.
+    assert len(matching) >= len(reviews) * 0.8
+
+
+def test_generate_reviews_sentiment_correlates_with_rating():
+    # A 1-2 star review reading as glowingly positive (or vice versa) would
+    # be a giveaway that ratings and text are generated independently,
+    # undermining any demo that shows both together. Spot-check the
+    # extremes: low ratings should skew toward templates with negative
+    # framing (slow, cold, rude, overpriced, disappointing), high ratings
+    # toward positive framing (fantastic, great, friendly, fresh, quick).
+    rng, faker = make_rng_and_faker(FIXED_SEED)
+    rid = _restaurant_id_for("Golden Skillet")
+    profile = _profile("Golden Skillet")
+    menu_items = generate_menu_items(rng, rid, "Golden Skillet")
+    reviews = generate_reviews(rng, faker, rid, profile["cuisine"], menu_items)
+
+    negative_words = {"slow", "cold", "rude", "overpriced", "disappointing", "bland", "messy"}
+    positive_words = {"fantastic", "great", "friendly", "fresh", "quick", "perfectly", "impressed"}
+
+    low_rated = [r for r in reviews if r["rating"] <= 2]
+    high_rated = [r for r in reviews if r["rating"] >= 4]
+
+    if low_rated:
+        assert any(
+            negative_words & set(r["review_text"].lower().replace(".", "").replace(",", "").split())
+            for r in low_rated
+        )
+    if high_rated:
+        assert any(
+            positive_words & set(r["review_text"].lower().replace(".", "").replace(",", "").split())
+            for r in high_rated
+        )
 
 
 def test_generate_campaigns_shape():

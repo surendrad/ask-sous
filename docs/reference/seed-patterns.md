@@ -22,7 +22,7 @@ Deterministic and idempotent — running it again always produces the exact same
 
 Seed window: 90 calendar days ending **2026-07-14** (fixed `SEED_END_DATE`, not "today" — see ADR-004).
 
-Actual seeded row counts (from the most recent `python -m app.seed.seed` run): 5 restaurants, 59 menu items, 36,877 transactions, 93,866 transaction items, 138 reviews, 16 campaigns.
+Actual seeded row counts (from the most recent `python -m app.seed.seed` run): 5 restaurants, 59 menu items, 37,019 transactions, 94,113 transaction items, 142 reviews, 17 campaigns. These non-transaction-and-review-adjacent counts (menu items, restaurants) stay fixed across code changes; the exact transaction/review/campaign counts can shift slightly whenever generator code changes the number of `rng` draws consumed earlier in the fixed generation sequence (menu items → transactions → reviews → campaigns, per restaurant) — expected and harmless given the single shared `random.Random` stream ADR-004 describes, not a sign of broken determinism (the same code + same `FIXED_SEED` still always produces the same output).
 
 ---
 
@@ -137,7 +137,7 @@ psql -U ask_sous_readonly -d ask_sous -c "INSERT INTO restaurants (name) VALUES 
 
 ## Embedding column state (Phase 4+)
 
-`reviews.embedding` and `campaigns.embedding` (both `vector(768)`, ADR-003) are **`NULL` by default** in a fresh clone or reseed — `seed.py` never populates them. They're only populated by running `python -m app.seed.embed_seed_data`, a separate follow-up script (`backend/app/seed/embed_seed_data.py`), which requires live Vertex AI credentials (see `docs/reference/gcp-setup.md`) and has not been run in this implementation environment.
+`reviews.embedding` and `campaigns.embedding` (both `vector(768)`, ADR-003) are **`NULL` by default** in a fresh clone or reseed — `seed.py` never populates them. They're only populated by running `python -m app.seed.embed_seed_data`, a separate follow-up script (`backend/app/seed/embed_seed_data.py`), which requires live Vertex AI credentials (see `docs/reference/gcp-setup.md`).
 
 Until that script runs, `search_customer_reviews`/`search_similar_campaigns` (Phase 4) will correctly return zero matches for every restaurant — this is expected, honest "no data yet" behaviour (`WHERE embedding IS NOT NULL`), not a bug. Verify the current state at any time:
 
@@ -146,4 +146,8 @@ psql -U ask_sous -d ask_sous -c "SELECT COUNT(*) FROM reviews WHERE embedding IS
 psql -U ask_sous -d ask_sous -c "SELECT COUNT(*) FROM campaigns WHERE embedding IS NOT NULL;"
 ```
 
-Once populated with live credentials, both counts should read **138** and **16** respectively — matching every review and campaign seeded above — and re-running `embed_seed_data.py` again should leave both counts unchanged (idempotent, per ADR-008).
+Once populated with live credentials, both counts should read **138** and **16** respectively — matching every review and campaign seeded above — and re-running `embed_seed_data.py` again should leave both counts unchanged (idempotent, per ADR-008). **Status: run for real (2026-07-16)** — see `docs/decisions/013-live-credentials-verification.md`. Re-run it again after any reseed, since `seed.py` truncates and regenerates the `reviews`/`campaigns` tables (and their `id`s) from scratch, leaving the new rows' `embedding` columns `NULL` until `embed_seed_data.py` runs again.
+
+### Review text content
+
+`generate_reviews()` (Phase 1) originally used Faker's generic `paragraph()` text — grammatically plausible but never actually about anything, which meant real semantic search technically worked (returned nearest neighbors by cosine distance) but never found anything genuinely relevant to a query like "what are customers saying about the service?" This was discovered during live-credentials verification, not caught by any test, since no test asserted anything about review text *content*, only its presence. Fixed: review text is now drawn from `POSITIVE_REVIEW_TEMPLATES`/`MIXED_REVIEW_TEMPLATES`/`NEGATIVE_REVIEW_TEMPLATES` (`generators.py`), selected by the review's own `rating` so sentiment and rating correlate the way real reviews do, and covering genuine restaurant-review topics (service, food quality, wait times, price, ambiance) so qualitative vector search over them is actually meaningful. **Re-seed and re-embed to pick this up** in an existing local database — the fix only affects newly-generated rows, not ones already in Postgres from before this change.

@@ -505,3 +505,13 @@ Status indicators: ⬜ Not Started · 🟧 In Progress · 🟩 Done · 🟥 Bloc
 - 🟩 Write `docs/decisions/013-live-credentials-verification.md`
 - 🟩 Update `docs/changelog.md`, `docs/reference/gcp-setup.md`
 - 🟩 Full backend suite passing (244 tests)
+
+## Seed Review Content Realism Fix (post-live-verification)
+
+- 🟩 Write failing unit tests: review text is restaurant-domain content, sentiment correlates with rating
+- 🟩 Implement `POSITIVE_REVIEW_TEMPLATES`/`MIXED_REVIEW_TEMPLATES`/`NEGATIVE_REVIEW_TEMPLATES` in `generators.py`, rating-selected
+- 🟩 Update `generate_reviews()` signature (`cuisine`, `menu_items`) and `seed.py`'s call site
+- 🟩 Re-seed + re-embed with the new content (142 reviews, 17 campaigns)
+- 🟩 Re-verify real qualitative search now returns genuinely relevant reviews
+- 🟩 Update `docs/reference/seed-patterns.md` (embedding-state note, current row counts) and `docs/changelog.md`
+- 🟩 Full backend suite passing (246 tests)

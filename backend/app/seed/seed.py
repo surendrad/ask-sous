@@ -74,7 +74,9 @@ async def seed_database(session: AsyncSession) -> dict[str, int]:
         all_transactions.extend(transactions)
         all_transaction_items.extend(transaction_items)
 
-        all_reviews.extend(generate_reviews(rng, faker, restaurant_id))
+        all_reviews.extend(
+            generate_reviews(rng, faker, restaurant_id, profile["cuisine"], menu_items)
+        )
         all_campaigns.extend(
             generate_campaigns(
                 rng, faker, restaurant_id, profile["name"], profile["cuisine"], menu_items

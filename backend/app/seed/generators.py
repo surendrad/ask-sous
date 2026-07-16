@@ -227,6 +227,45 @@ CAMPAIGN_COPY_TEMPLATES = [
     "{name} presents {item} — the dish everyone's been asking about.",
 ]
 
+# Real restaurant-domain content, not generic Faker sentence()/paragraph()
+# text — the latter is grammatically plausible but never actually about
+# anything, so real semantic search over it can never find a genuinely
+# relevant match (see docs/decisions/013-live-credentials-verification.md's
+# "content-quality limitation" finding, discovered via a live search that
+# technically worked but never returned anything relevant). Bucketed by
+# sentiment so a review's tone correlates with its numeric rating, matching
+# how real reviews actually read. {cuisine}/{item} placeholders are
+# optional per-template — str.format() ignores unused kwargs.
+POSITIVE_REVIEW_TEMPLATES = [
+    "The service here was fantastic — our server was attentive and friendly the whole time.",
+    "Best {cuisine} I've had in ages. The {item} was cooked perfectly.",
+    "We didn't wait long at all, and the staff greeted us warmly right away.",
+    "Great value for the portion size — the {item} alone was worth the trip.",
+    "Cozy atmosphere and the food came out quick. We'll definitely be back.",
+    "The staff went out of their way to accommodate our allergies. Really impressed.",
+    "Fresh ingredients and bold flavors — the {item} stood out from anything else on the menu.",
+    "Quick, friendly service even during the dinner rush. Highly recommend.",
+]
+
+NEGATIVE_REVIEW_TEMPLATES = [
+    "Service was painfully slow — we waited over 40 minutes just to have our order taken.",
+    "The {item} arrived cold and the staff seemed uninterested in helping.",
+    "Way overpriced for what you get. Wouldn't come back.",
+    "Our server disappeared for most of the meal and never checked back in.",
+    "The dining room was noisy and cramped, and the wait was way too long.",
+    "Disappointing {cuisine} — the {item} was bland and overcooked.",
+    "Rude staff and a messy dining room. Not what I expected.",
+    "Took forever to get seated even though half the tables were empty.",
+]
+
+MIXED_REVIEW_TEMPLATES = [
+    "The {item} was good but service was a bit slow during the rush.",
+    "Decent {cuisine}, though the prices felt a little high for the portion sizes.",
+    "Friendly staff, but we had to wait a while for our food to come out.",
+    "The food was fine, nothing special, but the atmosphere was nice.",
+    "Good flavors overall, though the {item} could have come out warmer.",
+]
+
 
 def rng_uuid(rng) -> uuid.UUID:
     """Deterministic UUID drawn from the seeded RNG.
@@ -357,7 +396,20 @@ def generate_transactions_and_items(
     return transactions, transaction_items
 
 
-def generate_reviews(rng, faker: Faker, restaurant_id: uuid.UUID) -> list[dict]:
+def _review_text_for_rating(rng, rating: int, cuisine: str, menu_items: list[dict]) -> str:
+    if rating <= 2:
+        templates = NEGATIVE_REVIEW_TEMPLATES
+    elif rating == 3:
+        templates = MIXED_REVIEW_TEMPLATES
+    else:
+        templates = POSITIVE_REVIEW_TEMPLATES
+    item = rng.choice(menu_items)["name"] if menu_items else ""
+    return rng.choice(templates).format(cuisine=cuisine, item=item)
+
+
+def generate_reviews(
+    rng, faker: Faker, restaurant_id: uuid.UUID, cuisine: str, menu_items: list[dict]
+) -> list[dict]:
     count = rng.randint(20, 40)
     window = seed_window_dates()
     reviews = []
@@ -366,12 +418,13 @@ def generate_reviews(rng, faker: Faker, restaurant_id: uuid.UUID) -> list[dict]:
         created_at = datetime(
             day.year, day.month, day.day, rng.randint(8, 22), rng.randint(0, 59), tzinfo=UTC
         )
+        rating = rng.choices(RATING_CHOICES, weights=RATING_WEIGHTS)[0]
         reviews.append(
             {
                 "id": rng_uuid(rng),
                 "restaurant_id": restaurant_id,
-                "rating": rng.choices(RATING_CHOICES, weights=RATING_WEIGHTS)[0],
-                "review_text": faker.paragraph(nb_sentences=2),
+                "rating": rating,
+                "review_text": _review_text_for_rating(rng, rating, cuisine, menu_items),
                 "source": rng.choices(REVIEW_SOURCE_CHOICES, weights=REVIEW_SOURCE_WEIGHTS)[0],
                 "created_at": created_at,
             }
