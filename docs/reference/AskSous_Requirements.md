@@ -1,6 +1,6 @@
 # Ask Sous — Requirements & Build Plan
 
-A personal-project rebuild of the Revi "Ask Sous" agent: a chat interface over restaurant transaction
+A personal-project rebuild of the "Ask Sous" agent: a chat interface over restaurant transaction
 data, backed by a local Postgres database and Google Vertex AI (Gemini Flash 2.5), that answers owner
 questions and drafts marketing campaign copy. This mirrors the Scenario 4 architecture from your
 interview prep, scaled down to something buildable solo, with Postgres standing in for BigQuery and
@@ -140,7 +140,7 @@ Notes:
 
 This is a faithful shrink of the real architecture, not a different design — same layers, same
 separation of concerns (deterministic math stays in SQL, not in the model), just without the
-distributed infrastructure that only makes sense at Revi's actual scale.
+distributed infrastructure that only makes sense at restaurant tech's actual scale.
 
 ---
 
