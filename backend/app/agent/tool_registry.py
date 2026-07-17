@@ -1,7 +1,9 @@
 """Explicit, hand-written function-calling schemas for the insights tools:
 four Phase 2 aggregation tools, the raw SQL tool, search_customer_reviews
-(Phase 4), and four Phase 8 tools (compare_locations, list_campaigns,
-get_campaign_performance, get_upsell_metrics). Schemas are hand-written
+(Phase 4), four Phase 8 tools (compare_locations, list_campaigns,
+get_campaign_performance, get_upsell_metrics), and get_weekday_performance
+(shared by both insights Q&A and agentic campaign generation — see
+docs/decisions/016-agentic-campaign-generation.md). Schemas are hand-written
 rather than introspected from Python type hints because UUID/date/Decimal
 don't map cleanly to JSON Schema.
 
@@ -32,6 +34,7 @@ from app.agent.tools.raw_sql import run_readonly_query
 from app.agent.tools.revenue_summary import get_revenue_summary
 from app.agent.tools.upsell_metrics import get_upsell_metrics
 from app.agent.tools.vector_search import search_reviews
+from app.agent.tools.weekday_performance import get_weekday_performance
 
 
 def _to_jsonable(value: Any) -> Any:
@@ -80,6 +83,10 @@ def _parse_restaurant_and_date_range(
 
 
 def _parse_revenue_summary_args(args: dict[str, Any]) -> dict[str, Any]:
+    return _parse_restaurant_and_date_range(args, start_key="start_date", end_key="end_date")
+
+
+def _parse_weekday_performance_args(args: dict[str, Any]) -> dict[str, Any]:
     return _parse_restaurant_and_date_range(args, start_key="start_date", end_key="end_date")
 
 
@@ -323,6 +330,25 @@ INSIGHTS_TOOLS: list[ToolDeclaration] = [
         },
     ),
     ToolDeclaration(
+        name="get_weekday_performance",
+        description=(
+            "Revenue, transaction count, and average ticket grouped by day of the week "
+            "(Monday through Sunday) for a restaurant over a date range — use this for "
+            "any question about which weekday is busiest/slowest, instead of requesting "
+            "get_revenue_summary's daily breakdown and grouping the days by weekday "
+            "yourself. Always returns all seven weekdays, including ones with no activity."
+        ),
+        parameters={
+            "type": "OBJECT",
+            "properties": {
+                "restaurant_id": _RESTAURANT_ID_PARAM,
+                "start_date": {"type": "STRING", "description": _DATE_PARAM_DESC},
+                "end_date": {"type": "STRING", "description": _DATE_PARAM_DESC},
+            },
+            "required": ["restaurant_id", "start_date", "end_date"],
+        },
+    ),
+    ToolDeclaration(
         name="get_upsell_metrics",
         description=(
             "Upsell attach rate (percentage of transactions that included a designated "
@@ -355,4 +381,5 @@ TOOL_DISPATCH: dict[str, ToolSpec] = {
         get_campaign_performance, _parse_get_campaign_performance_args
     ),
     "get_upsell_metrics": ToolSpec(get_upsell_metrics, _parse_restaurant_ids_and_date_range),
+    "get_weekday_performance": ToolSpec(get_weekday_performance, _parse_weekday_performance_args),
 }

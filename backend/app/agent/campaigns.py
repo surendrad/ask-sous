@@ -1,9 +1,10 @@
 """Campaign copy generation — the second agent capability alongside insights
-Q&A. Unlike answer_question()'s open-ended multi-round tool-calling loop,
-this is a single retrieve-then-generate turn: fetch the restaurant's brand
-voice guide, retrieve 1-2 similar past campaigns as few-shot grounding, then
-one model call always on the Pro-tier model. See
-docs/plans/phase-5-campaign-generation.md §5.3.
+Q&A. Agentic, like answer_question(): the model is offered the same
+INSIGHTS_TOOLS roster and decides for itself whether a brief needs grounding
+in real data before it can write specific copy (see
+docs/decisions/016-agentic-campaign-generation.md). Brand voice and past-
+campaign retrieval stay a fixed pre-fetch, not a tool call — that's about
+tone, not a fact the model needs to decide whether to look up.
 """
 
 import asyncio
@@ -12,8 +13,16 @@ from dataclasses import dataclass, field
 
 import structlog
 
-from app.agent.llm_client import PRO_MODEL, FinalAnswer, GeminiClient, UserText
+from app.agent.exceptions import AgentIncompleteError
+from app.agent.insights import (
+    MAX_TOOL_CALL_ROUNDS,
+    ToolCallRecord,
+    _check_grounding,
+    _resolve_tool_call_round,
+)
+from app.agent.llm_client import PRO_MODEL, ConversationEntry, FinalAnswer, GeminiClient, UserText
 from app.agent.prompts.campaign_system_instruction import build_campaign_system_instruction
+from app.agent.tool_registry import INSIGHTS_TOOLS
 from app.agent.tools.restaurant_lookup import get_brand_voice_guide
 from app.agent.tools.vector_search import SimilarCampaign, search_similar_campaigns
 
@@ -28,6 +37,7 @@ class CampaignGenerationResult:
     brand_voice_guide: str
     examples_used: list[SimilarCampaign] = field(default_factory=list)
     model: str = PRO_MODEL
+    tool_calls: list[ToolCallRecord] = field(default_factory=list)
 
 
 async def generate_campaign(restaurant_id: uuid.UUID, brief: str) -> CampaignGenerationResult:
@@ -53,34 +63,44 @@ async def generate_campaign(restaurant_id: uuid.UUID, brief: str) -> CampaignGen
             example_ids=[str(e.campaign_id) for e in examples],
         )
 
-        system_instruction = build_campaign_system_instruction(brand_voice_guide, examples)
-        client = GeminiClient()
-        turn_output = await client.generate_turn(
-            history=[UserText(brief)],
-            tools=[],
-            system_instruction=system_instruction,
-            model=PRO_MODEL,
+        system_instruction = build_campaign_system_instruction(
+            restaurant_id, brand_voice_guide, examples
         )
-        if not isinstance(turn_output, FinalAnswer):
-            # No tools were offered, so the model should never request one.
-            # This isn't insights.py's round-cap case (an expected, budgeted
-            # "ran out of rounds" outcome) — it's an SDK/model contract
-            # violation with no rounds to exhaust, so it's deliberately left
-            # to the generic unhandled_exception_handler (500) rather than
-            # reusing AgentIncompleteError's "try rephrasing" messaging,
-            # which doesn't describe this failure.
-            raise RuntimeError(
-                f"generate_turn() returned tool calls despite tools=[]: {turn_output!r}"
+        client = GeminiClient()
+        history: list[ConversationEntry] = [UserText(brief)]
+        tool_calls: list[ToolCallRecord] = []
+
+        for _round_index in range(MAX_TOOL_CALL_ROUNDS):
+            turn_output = await client.generate_turn(
+                history=history,
+                tools=INSIGHTS_TOOLS,
+                system_instruction=system_instruction,
+                model=PRO_MODEL,
             )
 
-        logger.info(
-            "campaign_turn_completed", copy_text=turn_output.text, example_count=len(examples)
-        )
-        return CampaignGenerationResult(
-            copy_text=turn_output.text,
-            brand_voice_guide=brand_voice_guide,
-            examples_used=examples,
-            model=PRO_MODEL,
+            if isinstance(turn_output, FinalAnswer):
+                if not _check_grounding(turn_output.text, tool_calls):
+                    logger.warning(
+                        "possible_ungrounded_numeric_answer", answer=turn_output.text
+                    )
+                logger.info(
+                    "campaign_turn_completed",
+                    copy_text=turn_output.text,
+                    example_count=len(examples),
+                    tool_call_count=len(tool_calls),
+                )
+                return CampaignGenerationResult(
+                    copy_text=turn_output.text,
+                    brand_voice_guide=brand_voice_guide,
+                    examples_used=examples,
+                    model=PRO_MODEL,
+                    tool_calls=tool_calls,
+                )
+
+            await _resolve_tool_call_round(turn_output, history, tool_calls)
+
+        raise AgentIncompleteError(
+            f"Campaign generation did not complete within {MAX_TOOL_CALL_ROUNDS} rounds."
         )
     finally:
         structlog.contextvars.clear_contextvars()

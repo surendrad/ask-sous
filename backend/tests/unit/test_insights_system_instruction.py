@@ -58,3 +58,8 @@ def test_system_instruction_includes_todays_date_for_relative_date_questions():
 def test_system_instruction_defaults_todays_date_to_real_today():
     instruction = build_insights_system_instruction([_RID])
     assert date.today().isoformat() in instruction
+
+
+def test_system_instruction_mentions_weekday_performance_tool():
+    instruction = build_insights_system_instruction([_RID])
+    assert "get_weekday_performance" in instruction

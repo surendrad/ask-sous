@@ -17,6 +17,7 @@ _TOOL_NAMES = {
     "list_campaigns",
     "get_campaign_performance",
     "get_upsell_metrics",
+    "get_weekday_performance",
 }
 
 # Tools scoped to a single restaurant via `restaurant_id`, vs. a list via
@@ -30,6 +31,7 @@ _SINGLE_RESTAURANT_ID_TOOLS = {
     "get_cohort_comparison",
     "search_customer_reviews",
     "list_campaigns",
+    "get_weekday_performance",
 }
 _MULTI_RESTAURANT_ID_TOOLS = {"compare_locations", "get_upsell_metrics"}
 

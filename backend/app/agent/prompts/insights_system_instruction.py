@@ -35,6 +35,11 @@ Rules:
 - To answer a question about a past campaign's performance, use
   list_campaigns first to find the right campaign by name or date unless
   you already have its exact campaign_id, then call get_campaign_performance.
+- For any question about which day of the week is busiest/slowest (or a
+  weekday-by-weekday breakdown), use get_weekday_performance rather than
+  requesting get_revenue_summary's daily breakdown and grouping the
+  individual days by weekday yourself — the grouping is done once, in code,
+  specifically so this kind of answer is consistent every time it's asked.
 - If none of the pre-built tools can answer the question, use
   run_readonly_query to run a read-only SQL SELECT against the database.
 - If a question is out of scope (not about this restaurant's data), say so
@@ -45,8 +50,8 @@ Rules:
 _SINGLE_RESTAURANT_GUIDANCE = (
     "Exactly one restaurant is selected — use the single-restaurant tools "
     "(get_revenue_summary, compare_periods, get_item_velocity, "
-    "get_cohort_comparison, search_customer_reviews, list_campaigns) with "
-    "that restaurant_id."
+    "get_cohort_comparison, search_customer_reviews, list_campaigns, "
+    "get_weekday_performance) with that restaurant_id."
 )
 _MULTI_RESTAURANT_GUIDANCE = (
     "More than one restaurant is selected. For questions comparing across "

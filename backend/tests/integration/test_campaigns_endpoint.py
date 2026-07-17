@@ -5,6 +5,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.agent.campaigns import CampaignGenerationResult
 from app.agent.exceptions import AgentIncompleteError, AgentUnavailableError
+from app.agent.insights import ToolCallRecord
 from app.agent.tools.vector_search import SimilarCampaign
 from app.main import app
 
@@ -16,27 +17,39 @@ async def _client() -> AsyncClient:
 async def test_campaigns_happy_path_returns_envelope(seeded_restaurants):
     restaurant_id = next(iter(seeded_restaurants.values()))
     fixed_result = CampaignGenerationResult(
-        copy_text="Taco Tuesday returns!",
+        copy_text="Tuesdays are slow — 20% off dine-in orders over $20!",
         brand_voice_guide="Warm and playful.",
         examples_used=[
             SimilarCampaign(campaign_id=uuid.uuid4(), copy_text="Old copy.", distance=0.1)
         ],
         model="gemini-2.5-pro",
+        tool_calls=[
+            ToolCallRecord(
+                tool_name="get_weekday_performance",
+                arguments={"restaurant_id": str(restaurant_id)},
+                result=[{"day_of_week": "Tuesday", "total_revenue": "100.00"}],
+                error=None,
+            )
+        ],
     )
 
     async with await _client() as client:
         with patch("app.api.campaigns.generate_campaign", AsyncMock(return_value=fixed_result)):
             response = await client.post(
                 "/campaigns",
-                json={"restaurant_id": str(restaurant_id), "brief": "Announce taco special"},
+                json={
+                    "restaurant_id": str(restaurant_id),
+                    "brief": "Create a campaign for our slowest weekday",
+                },
             )
 
     assert response.status_code == 200
     body = response.json()
     assert body["error"] is None
-    assert body["data"]["copy_text"] == "Taco Tuesday returns!"
+    assert body["data"]["copy_text"] == "Tuesdays are slow — 20% off dine-in orders over $20!"
     assert body["data"]["model"] == "gemini-2.5-pro"
     assert body["data"]["examples_used"][0]["copy_text"] == "Old copy."
+    assert body["data"]["tool_calls"][0]["tool_name"] == "get_weekday_performance"
 
 
 async def test_campaigns_nonexistent_restaurant_returns_404():

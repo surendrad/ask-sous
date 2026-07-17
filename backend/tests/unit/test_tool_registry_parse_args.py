@@ -171,3 +171,21 @@ def test_get_upsell_metrics_parse_args_valid():
         }
     )
     assert parsed["restaurant_ids"] == [uuid.UUID(_RID)]
+
+
+def test_get_weekday_performance_parse_args_valid():
+    parsed = TOOL_DISPATCH["get_weekday_performance"].parse_args(
+        {"restaurant_id": _RID, "start_date": "2026-01-01", "end_date": "2026-01-31"}
+    )
+    assert parsed == {
+        "restaurant_id": uuid.UUID(_RID),
+        "start_date": date(2026, 1, 1),
+        "end_date": date(2026, 1, 31),
+    }
+
+
+def test_get_weekday_performance_parse_args_invalid_uuid_raises():
+    with pytest.raises(ValueError):
+        TOOL_DISPATCH["get_weekday_performance"].parse_args(
+            {"restaurant_id": "not-a-uuid", "start_date": "2026-01-01", "end_date": "2026-01-31"}
+        )

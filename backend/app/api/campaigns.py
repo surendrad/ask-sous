@@ -21,10 +21,18 @@ class CampaignExampleSummary(BaseModel):
     copy_text: str
 
 
+class CampaignToolCallSummary(BaseModel):
+    tool_name: str
+    arguments: dict
+    result: dict | list | None
+    error: str | None
+
+
 class CampaignResponseData(BaseModel):
     copy_text: str
     examples_used: list[CampaignExampleSummary]
     model: str
+    tool_calls: list[CampaignToolCallSummary]
 
 
 @router.post("/campaigns")
@@ -44,5 +52,11 @@ async def generate_campaign_endpoint(payload: CampaignRequest) -> dict:
             for example in result.examples_used
         ],
         model=result.model,
+        tool_calls=[
+            CampaignToolCallSummary(
+                tool_name=tc.tool_name, arguments=tc.arguments, result=tc.result, error=tc.error
+            )
+            for tc in result.tool_calls
+        ],
     )
     return success(data.model_dump())

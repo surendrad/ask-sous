@@ -206,6 +206,7 @@ describe("generateCampaign", () => {
             copy_text: "Taco Tuesday!",
             examples_used: [],
             model: "gemini-2.5-pro",
+            tool_calls: [],
           },
           error: null,
         }),

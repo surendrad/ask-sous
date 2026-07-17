@@ -1,6 +1,7 @@
 import { Copy, Megaphone, RefreshCw, Sparkles } from "lucide-react";
 import { useState } from "react";
 
+import { CitationChip } from "@/components/CitationChip";
 import { StatusTag } from "@/components/StatusTag";
 import { Button } from "@/components/ui/button";
 import type { CampaignResult } from "@/lib/api";
@@ -14,11 +15,15 @@ type CampaignsPanelProps = {
 /** Campaigns panel — the right panel in the split view per
  * design-guidelines.md §5/§11: a brief input, a Generate action, and a
  * stacked campaign-draft card with Regenerate + Copy actions. Unlike
- * ChatPage, /campaigns is a plain single-shot response, not streamed — see
+ * ChatPage, /campaigns is a plain single response, not streamed — see
  * docs/decisions/011 for why that's a deliberate non-goal for this
- * endpoint. Campaign generation stays single-location by design (Phase 8):
- * brand voice and copy are generated per-restaurant, so when the sidebar
- * has more than one location selected, this panel disables Generate and
+ * endpoint. Generation is agentic though (docs/decisions/016): the model
+ * may call the same tools chat uses (e.g. get_weekday_performance) before
+ * writing copy that references real data, and any tools it called render
+ * as citation chips under the draft, same as chat's grounding evidence.
+ * Campaign generation stays single-location by design (Phase 8): brand
+ * voice and copy are generated per-restaurant, so when the sidebar has
+ * more than one location selected, this panel disables Generate and
  * prompts the owner to narrow the selection rather than guessing which
  * location to generate for. */
 export default function CampaignsPanel({
@@ -116,6 +121,18 @@ export default function CampaignsPanel({
       {draft && !isLoading && (
         <div className="rounded-lg border border-border bg-elevated p-4 shadow-e1">
           <p className="text-sm leading-[22px] text-text">{draft.copy_text}</p>
+          {draft.tool_calls.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {draft.tool_calls.map((tc, i) => (
+                <CitationChip
+                  // biome-ignore lint/suspicious/noArrayIndexKey: tool calls carry no id from the API and this list is fixed once a draft finishes generating
+                  key={`${tc.tool_name}-${i}`}
+                  toolName={tc.tool_name}
+                  hasError={!!tc.error}
+                />
+              ))}
+            </div>
+          )}
           <div className="mt-3 flex gap-2">
             <Button
               type="button"

@@ -42,6 +42,11 @@ export type CampaignResult = {
   copy_text: string;
   examples_used: CampaignExample[];
   model: string;
+  // Campaign generation is agentic (Phase 8+) — the model may call the same
+  // tools chat does (e.g. get_weekday_performance) before writing copy that
+  // references real performance data. Reuses ChatToolCall's shape since
+  // it's the identical envelope shape.
+  tool_calls: ChatToolCall[];
 };
 
 export type DashboardKpis = {
